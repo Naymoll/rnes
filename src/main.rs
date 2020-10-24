@@ -1,5 +1,10 @@
+#[macro_use]
+extern crate lazy_static;
+
+#[macro_use]
+extern crate bitflags;
+
 mod nes;
-use crate::nes::NES;
 
 fn main() {
     println!("Hello, world!");
