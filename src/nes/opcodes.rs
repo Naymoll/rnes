@@ -35,6 +35,4 @@ impl Opcode {
     }
 }
 
-lazy_static! {
-
-}
+//const LDA: Opcode = Opcode::new(0x69, "LDA", 2, 10, AddressingMode::Immediate);
