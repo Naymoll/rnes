@@ -89,7 +89,7 @@ impl CPU {
     }
 
     fn update_negative_flag(&mut self, value: u8) {
-        self.status.set(CpuFlags::OVERFLOW, (value & 0b1000_0000) != 0);
+        self.status.set(CpuFlags::NEGATIVE, (value & 0b1000_0000) != 0);
     }
 
     fn set_accumulator(&mut self, value: u8) {
@@ -99,29 +99,21 @@ impl CPU {
         self.update_negative_flag(self.accumulator);
     }
 
-    //TODO: Возможно есть способ проверки без приведения к u16
     fn add_to_accumulator(&mut self, value: u8) {
         let carry = match self.status.contains(CpuFlags::CARRY) {
             true => 1,
             false => 0,
         };
 
-        let sum: u16 = self.accumulator as u16 + value as u16 + carry;
+        let sum = self.accumulator as u16 + value as u16 + carry;
 
-        match sum > 0xFF {
-            true => self.status.insert(CpuFlags::CARRY),
-            false => self.status.remove(CpuFlags::CARRY),
-        };
+        const CARRY_MASK: u16 = 256;
+        const OVERFLOW_MASK: u16 = 128;
 
-        let sum = sum as u8;
+        self.status.set(CpuFlags::CARRY, sum & CARRY_MASK != 0);
+        self.status.set(CpuFlags::OVERFLOW, sum & OVERFLOW_MASK != 0);
 
-        if (sum ^ value) & (sum ^ self.accumulator) & 0x80 != 0 {
-            self.status.insert(CpuFlags::OVERFLOW);
-        } else {
-            self.status.remove(CpuFlags::OVERFLOW);
-        }
-
-        self.set_accumulator(sum);
+        self.set_accumulator(sum as u8);
     }
 
     fn adc(&mut self, value: u8) {
@@ -147,7 +139,7 @@ mod cpu_test {
     #[test]
     fn test_lda_negative() {
         let mut cpu = CPU::new();
-        cpu.execute_commands(vec![0xA9, 0b1000_0101]);
+        cpu.lda(0b1000_0101);
 
         assert_eq!(cpu.accumulator, 0b1000_0101);
         assert!(cpu.status.contains(CpuFlags::NEGATIVE));
@@ -165,7 +157,8 @@ mod cpu_test {
     #[test]
     fn test_tax_negative() {
         let mut cpu = CPU::new();
-        cpu.execute_commands(vec![0xA9, 0b1000_0101, 0xAA]);
+        cpu.lda( 0b1000_0101);
+        cpu.tax();
 
         assert_eq!(cpu.register_x, 0b1000_0101);
         assert!(cpu.status.contains(CpuFlags::NEGATIVE));
@@ -187,5 +180,23 @@ mod cpu_test {
         cpu.execute_commands(vec![0xA9, 20, 0x69, 40]);
 
         assert_eq!(cpu.accumulator, 61);
+    }
+
+    #[test]
+    fn test_adc_overflow() {
+        let mut cpu = CPU::new();
+        cpu.execute_commands(vec![0xA9, 255, 0x69, 129]);
+
+        assert_eq!(cpu.accumulator, 128);
+        assert!(cpu.status.contains(CpuFlags::OVERFLOW));
+    }
+
+    #[test]
+    fn test_adc_carry() {
+        let mut cpu = CPU::new();
+        cpu.execute_commands(vec![0xA9, 128, 0x69, 128]);
+
+        assert_eq!(cpu.accumulator, 0);
+        assert!(cpu.status.contains(CpuFlags::CARRY));
     }
 }
