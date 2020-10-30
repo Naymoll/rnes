@@ -1,17 +1,4 @@
-#[allow(dead_code)]
-pub enum AddressingMode {
-    Immediate,
-    ZeroPage,
-    Absolute,
-    Implied,
-    Accumulator,
-    Indexed,
-    ZeroPageIndexed,
-    Indirect,
-    PreIndexedIndirect,
-    PostIndexedIndirect,
-    Relative,
-}
+use crate::nes::cpu::AddressingMode;
 
 #[allow(dead_code)]
 pub struct Opcode {
