@@ -101,8 +101,9 @@ impl CPU {
                 self.read_u16(address.wrapping_add(self.register_y as u16))
             }
 
+            //TODO: Проверить корректность saturating_abs
             AddressingMode::Relative => {
-                let mut offset = self.read_u8(self.program_counter) as i8;
+                let offset = self.read_u8(self.program_counter) as i8;
                 match offset.is_negative() {
                     true => self.program_counter.wrapping_sub((offset.saturating_abs() as u16) + 1),
                     false => self.program_counter.wrapping_add(offset as u16)
@@ -225,11 +226,14 @@ impl Memory for CPU {
     }
 
     fn write_u8(&mut self, address: u16, value: u8) {
-        unimplemented!()
+        self.memory[address as usize] = value;
     }
 
+    //TODO: Проверить порядок
     fn write_u16(&mut self, address: u16, value: u16) {
-        unimplemented!()
+        let bytes = value.to_be_bytes();
+        self.memory[address as usize] = bytes[0];
+        self.memory[address as usize] = bytes[1];
     }
 }
 
