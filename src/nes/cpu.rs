@@ -1,4 +1,6 @@
 use crate::nes::mem::Memory;
+use crate::nes::cpu::AddressingMode::Relative;
+use std::net::Shutdown::Read;
 
 pub enum AddressingMode {
     Immediate,
@@ -14,6 +16,12 @@ pub enum AddressingMode {
     Relative,
     Accumulator,
     Implied,
+}
+
+enum Register {
+    Accumulator,
+    X,
+    Y,
 }
 
 bitflags! {
@@ -176,11 +184,15 @@ impl CPU {
         self.status.set(CpuFlags::NEGATIVE, (value & 0b1000_0000) != 0);
     }
 
-    fn set_accumulator(&mut self, value: u8) {
-        self.accumulator = value;
+    fn set_register(&mut self, register: Register, value: u8) {
+        match register {
+            Register::Accumulator => self.accumulator = value,
+            Register::X => self.register_x = value,
+            Register::Y => self.register_y = value,
+        }
 
-        self.update_zero_flag(self.accumulator);
-        self.update_negative_flag(self.accumulator);
+        self.update_zero_flag(value);
+        self.update_negative_flag(value);
     }
 
     fn add_to_accumulator(&mut self, value: u8) {
@@ -193,7 +205,7 @@ impl CPU {
         self.set_carry_flag(sum & CARRY_MASK != 0);
         self.set_overflow_flag(sum & OVERFLOW_MASK != 0);
 
-        self.set_accumulator(sum as u8);
+        self.set_register(Register::Accumulator,sum as u8);
     }
 
     fn adc(&mut self, value: u8) {
@@ -201,17 +213,18 @@ impl CPU {
     }
 
     fn and(&mut self, value: u8) {
-        self.set_accumulator(self.accumulator & value);
+        self.set_register(Register::Accumulator, self.accumulator & value);
     }
 
     //TODO: Исправить (должно быть присваивание) и протестировать
-    fn asl(&mut self, value: u8) {
-        let shift_value = (value as u16) << 1;
-        self.set_carry_flag(shift_value & CARRY_MASK != 0);
+    fn asl(&mut self, mut value: u8) -> u8{
+        self.set_carry_flag((value & 0b1000_0000) != 0);
 
-        let shift_value = shift_value as u8;
-        self.update_negative_flag(shift_value);
-        self.update_zero_flag(shift_value);
+        value <<= 1;
+        self.update_zero_flag(value);
+        self.update_negative_flag(value);
+
+        value
     }
 
     fn bit(&mut self, value: u8) {
@@ -220,6 +233,7 @@ impl CPU {
         self.update_negative_flag(value);
     }
 
+    //TODO: Стоит убрать, а очистку/установку делать напрямую
     fn clc(&mut self) {
         self.set_carry_flag(false);
     }
@@ -256,8 +270,8 @@ impl CPU {
         self.compare(self.register_y, value);
     }
 
-    fn decrement(&mut self, value: u8) -> u8 {
-        let value = value.wrapping_sub(1);
+    fn decrement(&mut self, mut value: u8) -> u8 {
+        value = value.wrapping_sub(1);
         self.update_zero_flag(value);
         self.update_negative_flag(value);
 
@@ -267,8 +281,9 @@ impl CPU {
     //TODO: Возможо, стоит поменять сигнатуру.
     // Либо попробовать другой метод с передачей режима адресации как аргумент
     fn dec(&mut self, address: u16) {
-        let value = self.read_u8(address);
-        self.write_u8(address, self.decrement(value));
+        let mut value = self.read_u8(address);
+        value = self.decrement(value);
+        self.write_u8(address, value);
     }
 
     fn dex(&mut self) {
@@ -280,11 +295,11 @@ impl CPU {
     }
 
     fn eor(&mut self, value: u8) {
-        self.set_accumulator(self.accumulator ^ value);
+        self.set_register(Register::Accumulator, self.accumulator ^ value);
     }
 
-    fn increment(&mut self, value: u8) -> u8 {
-        let value = value.wrapping_add(1);
+    fn increment(&mut self, mut value: u8) -> u8 {
+        value = value.wrapping_add(1);
         self.update_zero_flag(value);
         self.update_negative_flag(value);
 
@@ -292,8 +307,9 @@ impl CPU {
     }
 
     fn inc(&mut self, address: u16) {
-        let value = self.read_u8(address);
-        self.write_u8(address, self.increment(value));
+        let mut value = self.read_u8(address);
+        value = self.increment(value);
+        self.write_u8(address, value);
     }
 
     fn inx(&mut self) {
@@ -309,7 +325,93 @@ impl CPU {
     }
 
     fn lda(&mut self, value: u8) {
-        self.set_accumulator(value);
+        self.set_register(Register::Accumulator, value);
+    }
+
+    fn ldx(&mut self, value: u8) {
+        self.set_register(Register::X, value);
+    }
+
+    fn ldy(&mut self, value: u8) {
+        self.set_register(Register::Y, value);
+    }
+
+    //TODO: Исправить (должно быть присваивание) и протестировать
+    fn lsr(&mut self, mut value: u8) -> u8 {
+        self.set_carry_flag((value & 0b0000_0001) != 0);
+
+        value >>= 1;
+        self.update_zero_flag(value);
+        self.update_negative_flag(value);
+
+        value
+    }
+
+    fn nop(&mut self) {
+        self.increment_program_counter(1);
+    }
+
+    fn ora(&mut self, value: u8) {
+        self.set_register(Register::Accumulator, self.accumulator | value);
+    }
+
+    fn rol(&mut self, mut value: u8) -> u8 {
+        let new_carry = (value & 0b1000_0000) != 0;
+
+        value <<= 1 | match self.status.contains(CpuFlags::CARRY) {
+            true => 0b0000_0001,
+            false => 0b0000_0000,
+        };
+
+        self.set_carry_flag(new_carry);
+        self.update_zero_flag(value);
+        self.update_negative_flag(value);
+
+        value
+    }
+
+    fn ror(&mut self, mut value: u8) -> u8 {
+        let new_carry = (value & 0b0000_0001) != 0;
+
+        value >>= 1 | match self.status.contains(CpuFlags::CARRY) {
+            true => 0b1000_0000,
+            false => 0b0000_0000,
+        };
+
+        self.set_carry_flag(new_carry);
+        self.update_zero_flag(value);
+        self.update_negative_flag(value);
+
+        value
+    }
+
+    fn sbc(&mut self, value: u8) {
+        let carry = match self.status.contains(CpuFlags::CARRY) {
+            true => 0,
+            false => 1,
+        };
+
+        let div = self.accumulator as u16 - value as u16 - carry;
+        self.set_carry_flag(div & CARRY_MASK != 0);
+        self.set_overflow_flag(div & OVERFLOW_MASK != 0);
+
+        self.set_register(Register::Accumulator, div as u8);
+    }
+
+    fn store(&mut self, address: u16, value: u8) {
+        self.write_u8(address, value);
+    }
+
+    fn sta(&mut self, address: u16) {
+        self.store(address, self.accumulator);
+    }
+
+    fn stx(&mut self, address: u16) {
+        self.store(address, self.register_x);
+    }
+
+    fn sty(&mut self, address: u16) {
+        self.store(address, self.register_y);
     }
 
     fn tax(&mut self) {
