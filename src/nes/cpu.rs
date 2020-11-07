@@ -39,6 +39,9 @@ pub struct CPU {
     pub memory: [u8; 65536],
 }
 
+const CARRY_MASK: u16 = 256;
+const OVERFLOW_MASK: u16 = 128;
+
 #[allow(dead_code)]
 impl CPU {
     pub fn new() -> Self {
@@ -187,22 +190,122 @@ impl CPU {
         };
 
         let sum = self.accumulator as u16 + value as u16 + carry;
-
-        const CARRY_MASK: u16 = 256;
-        const OVERFLOW_MASK: u16 = 128;
-
-        self.status.set(CpuFlags::CARRY, sum & CARRY_MASK != 0);
-        self.status.set(CpuFlags::OVERFLOW, sum & OVERFLOW_MASK != 0);
+        self.set_carry_flag(sum & CARRY_MASK != 0);
+        self.set_overflow_flag(sum & OVERFLOW_MASK != 0);
 
         self.set_accumulator(sum as u8);
+    }
+
+    fn adc(&mut self, value: u8) {
+        self.add_to_accumulator(value);
     }
 
     fn and(&mut self, value: u8) {
         self.set_accumulator(self.accumulator & value);
     }
 
-    fn adc(&mut self, value: u8) {
-        self.add_to_accumulator(value);
+    //TODO: Исправить (должно быть присваивание) и протестировать
+    fn asl(&mut self, value: u8) {
+        let shift_value = (value as u16) << 1;
+        self.set_carry_flag(shift_value & CARRY_MASK != 0);
+
+        let shift_value = shift_value as u8;
+        self.update_negative_flag(shift_value);
+        self.update_zero_flag(shift_value);
+    }
+
+    fn bit(&mut self, value: u8) {
+        self.update_zero_flag(self.accumulator & value);
+        self.set_overflow_flag((value & 0b0100_000) != 0);
+        self.update_negative_flag(value);
+    }
+
+    fn clc(&mut self) {
+        self.set_carry_flag(false);
+    }
+
+    fn cld(&mut self) {
+        self.set_decimal_mode_flag(false);
+    }
+
+    fn cli(&mut self) {
+        self.set_interrupt_disable_flag(false);
+    }
+
+    fn clv(&mut self) {
+        self.set_overflow_flag(false);
+    }
+
+    fn compare(&mut self, lhs: u8, rhs: u8) {
+        self.set_carry_flag(lhs >= rhs);
+
+        let result = lhs.wrapping_sub(rhs);
+        self.update_zero_flag(result);
+        self.update_negative_flag(result);
+    }
+
+    fn cmp(&mut self, value: u8) {
+        self.compare(self.accumulator, value);
+    }
+
+    fn cpx(&mut self, value: u8) {
+        self.compare(self.register_x, value);
+    }
+
+    fn cpy(&mut self, value: u8) {
+        self.compare(self.register_y, value);
+    }
+
+    fn decrement(&mut self, value: u8) -> u8 {
+        let value = value.wrapping_sub(1);
+        self.update_zero_flag(value);
+        self.update_negative_flag(value);
+
+        value
+    }
+
+    //TODO: Возможо, стоит поменять сигнатуру.
+    // Либо попробовать другой метод с передачей режима адресации как аргумент
+    fn dec(&mut self, address: u16) {
+        let value = self.read_u8(address);
+        self.write_u8(address, self.decrement(value));
+    }
+
+    fn dex(&mut self) {
+        self.register_x = self.decrement(self.register_x);
+    }
+
+    fn dey(&mut self) {
+        self.register_y = self.decrement(self.register_y);
+    }
+
+    fn eor(&mut self, value: u8) {
+        self.set_accumulator(self.accumulator ^ value);
+    }
+
+    fn increment(&mut self, value: u8) -> u8 {
+        let value = value.wrapping_add(1);
+        self.update_zero_flag(value);
+        self.update_negative_flag(value);
+
+        value
+    }
+
+    fn inc(&mut self, address: u16) {
+        let value = self.read_u8(address);
+        self.write_u8(address, self.increment(value));
+    }
+
+    fn inx(&mut self) {
+        self.register_x = self.increment(self.register_x);
+    }
+
+    fn iny(&mut self) {
+        self.register_y = self.increment(self.register_y);
+    }
+
+    fn jmp(&mut self, address: u16) {
+        self.program_counter = address;
     }
 
     fn lda(&mut self, value: u8) {
@@ -235,9 +338,9 @@ impl Memory for CPU {
 
     //TODO: Проверить порядок
     fn write_u16(&mut self, address: u16, value: u16) {
-        let bytes = value.to_be_bytes();
+        let bytes = value.to_le_bytes();
         self.memory[address as usize] = bytes[0];
-        self.memory[address as usize] = bytes[1];
+        self.memory[address.wrapping_add(1) as usize] = bytes[1];
     }
 }
 
