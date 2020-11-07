@@ -197,6 +197,10 @@ impl CPU {
         self.set_accumulator(sum as u8);
     }
 
+    fn and(&mut self, value: u8) {
+        self.set_accumulator(self.accumulator & value);
+    }
+
     fn adc(&mut self, value: u8) {
         self.add_to_accumulator(value);
     }
