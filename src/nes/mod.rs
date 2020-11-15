@@ -1,5 +1,5 @@
 mod cpu;
-mod opcodes;
+mod instruction;
 mod mem;
 
 use crate::nes::cpu::CPU;
