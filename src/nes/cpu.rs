@@ -1,6 +1,4 @@
 use crate::nes::mem::Memory;
-use crate::nes::cpu::AddressingMode::Relative;
-use std::net::Shutdown::Read;
 
 pub enum AddressingMode {
     Immediate,
@@ -64,6 +62,30 @@ impl CPU {
         }
     }
 
+    pub fn execute_commands(&mut self, commands: std::vec::Vec<u8>) {
+        loop {
+            if (self.program_counter as usize) >= commands.len() {
+                return;
+            }
+
+            let command = commands[self.program_counter as usize];
+            self.program_counter += 1;
+
+            match command {
+                0x69 => {
+                    self.adc(commands[self.program_counter as usize]);
+                    self.program_counter += 1;
+                }
+                0xA9 => {
+                    self.lda(commands[self.program_counter as usize]);
+                    self.program_counter += 1;
+                }
+                0xAA => self.tax(),
+                _ => unimplemented!("That opcode unimplemented"),
+            }
+        }
+    }
+
     //TODO: Подумать над введением 2 аргумента,
     // который можно будет использвоать вместо PC
     // Написать тесты, скорее всего часть сделано неправильно
@@ -101,10 +123,8 @@ impl CPU {
             }
 
             AddressingMode::IndirectX => {
-                let address = self.read_u16(self.program_counter)
-                    .wrapping_add(self.register_x as u16);
-
-                self.read_u16(address)
+                let address = self.read_u16(self.program_counter);
+                self.read_u16(address.wrapping_add(self.register_x as u16))
             }
 
             AddressingMode::IndirectY => {
@@ -125,33 +145,8 @@ impl CPU {
         }
     }
 
-    pub fn execute_commands(&mut self, commands: std::vec::Vec<u8>) {
-        loop {
-            if (self.program_counter as usize) >= commands.len() {
-                return;
-            }
-
-            let command = commands[self.program_counter as usize];
-            self.program_counter += 1;
-
-            match command {
-                0x69 => {
-                    self.adc(commands[self.program_counter as usize]);
-                    self.program_counter += 1;
-                }
-                0xA9 => {
-                    self.lda(commands[self.program_counter as usize]);
-                    self.program_counter += 1;
-                }
-                0xAA => self.tax(),
-                _ => unimplemented!("That opcode unimplemented"),
-            }
-        }
-    }
-
     //TODO: Заменить инкремент счеткчика данной функцией,
     // в случае, если не нужно переполнение чисел - заменить на saturation_add()
-    #[allow(dead_code)]
     fn increment_program_counter(&mut self, value: u16) {
         self.program_counter = self.program_counter.wrapping_add(value);
     }
@@ -195,7 +190,7 @@ impl CPU {
         self.update_negative_flag(value);
     }
 
-    fn add_to_accumulator(&mut self, value: u8) {
+    fn adc(&mut self, value: u8) {
         let carry = match self.status.contains(CpuFlags::CARRY) {
             true => 1,
             false => 0,
@@ -208,16 +203,12 @@ impl CPU {
         self.set_register(Register::Accumulator,sum as u8);
     }
 
-    fn adc(&mut self, value: u8) {
-        self.add_to_accumulator(value);
-    }
-
     fn and(&mut self, value: u8) {
         self.set_register(Register::Accumulator, self.accumulator & value);
     }
 
     //TODO: Исправить (должно быть присваивание) и протестировать
-    fn asl(&mut self, mut value: u8) -> u8{
+    fn asl(&mut self, mut value: u8) -> u8 {
         self.set_carry_flag((value & 0b1000_0000) != 0);
 
         value <<= 1;
@@ -358,7 +349,7 @@ impl CPU {
     fn rol(&mut self, mut value: u8) -> u8 {
         let new_carry = (value & 0b1000_0000) != 0;
 
-        value <<= 1 | match self.status.contains(CpuFlags::CARRY) {
+        value = (value << 1) | match self.status.contains(CpuFlags::CARRY) {
             true => 0b0000_0001,
             false => 0b0000_0000,
         };
@@ -373,7 +364,7 @@ impl CPU {
     fn ror(&mut self, mut value: u8) -> u8 {
         let new_carry = (value & 0b0000_0001) != 0;
 
-        value >>= 1 | match self.status.contains(CpuFlags::CARRY) {
+        value = (value >> 1) | match self.status.contains(CpuFlags::CARRY) {
             true => 0b1000_0000,
             false => 0b0000_0000,
         };
@@ -438,7 +429,6 @@ impl Memory for CPU {
         self.memory[address as usize] = value;
     }
 
-    //TODO: Проверить порядок
     fn write_u16(&mut self, address: u16, value: u16) {
         let bytes = value.to_le_bytes();
         self.memory[address as usize] = bytes[0];
