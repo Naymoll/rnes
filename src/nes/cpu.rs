@@ -1,4 +1,5 @@
 use crate::nes::mem::Memory;
+use crate::nes::instruction::Instruction;
 
 pub enum AddressingMode {
     Immediate,
@@ -64,21 +65,26 @@ impl CPU {
 
     pub fn execute_commands(&mut self, commands: std::vec::Vec<u8>) {
         loop {
-            if (self.program_counter as usize) >= commands.len() {
-                return;
-            }
-
-            let command = commands[self.program_counter as usize];
+            let opcode = commands[self.program_counter as usize];
+            let instruction = Instruction::from_opcode(opcode);
             self.program_counter += 1;
 
-            match command {
-                0x69 => {
-                    self.adc(commands[self.program_counter as usize]);
-                    self.program_counter += 1;
+            match opcode {
+                0x69 | 0x65 | 0x75 | 0x6D | 0x7D | 0x79 | 0x61 |0x71 => {
+                    let addressing_mode = instruction.addressing_mode;
+                    let address = self.address(addressing_mode);
+                    let value = self.read_u8(address);
+
+                    self.adc(value);
+                    self.program_counter += instruction.len - 1;
                 }
-                0xA9 => {
-                    self.lda(commands[self.program_counter as usize]);
-                    self.program_counter += 1;
+                0xA9 | 0xA5 | 0xB5 | 0xAD |0xBD | 0xB9 |0xA1 | 0xB1 => {
+                    let addressing_mode = instruction.addressing_mode;
+                    let address = self.address(addressing_mode);
+                    let value = self.read_u8(address);
+
+                    self.lda(value);
+                    self.program_counter += instruction.len - 1;
                 }
                 0xAA => self.tax(),
                 _ => unimplemented!("That opcode unimplemented"),
@@ -406,10 +412,7 @@ impl CPU {
     }
 
     fn tax(&mut self) {
-        self.register_x = self.accumulator;
-
-        self.update_zero_flag(self.register_x);
-        self.update_negative_flag(self.register_x);
+        self.set_register(Register::X, self.accumulator);
     }
 }
 

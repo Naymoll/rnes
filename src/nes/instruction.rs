@@ -50,6 +50,8 @@ impl Instruction {
 
             //BCC
             0x90 => Instruction::new(opcode, 2, 2, AddressingMode::Relative),
+            //BCS
+            0xB0 => Instruction::new(opcode, 2, 2, AddressingMode::Relative),
             //BEQ
             0xF0 => Instruction::new(opcode, 2, 2, AddressingMode::Relative),
 
@@ -136,7 +138,7 @@ impl Instruction {
             0x6C => Instruction::new(opcode, 3, 5, AddressingMode::Indirect),
 
             //JSR
-            0x20 => Instruction::new(opcode, 3, 5, AddressingMode::Absolute),
+            0x20 => Instruction::new(opcode, 3, 6, AddressingMode::Absolute),
 
             //LDA
             0xA9 => Instruction::new(opcode, 2, 2, AddressingMode::Immediate),
