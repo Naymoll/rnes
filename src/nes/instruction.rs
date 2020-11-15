@@ -174,7 +174,7 @@ impl Instruction {
             //NOP
             0xEA => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
 
-            //EOR
+            //ORA
             0x09 => Instruction::new(opcode, 2, 2, AddressingMode::Immediate),
             0x05 => Instruction::new(opcode, 2, 3, AddressingMode::ZeroPage),
             0x15 => Instruction::new(opcode, 2, 4, AddressingMode::ZeroPageX),
