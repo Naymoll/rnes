@@ -15,8 +15,6 @@ pub struct NES {
 #[allow(dead_code)]
 impl NES {
     pub fn new() -> Self {
-        NES{
-            cpu: CPU::new(),
-        }
+        NES { cpu: CPU::new() }
     }
 }

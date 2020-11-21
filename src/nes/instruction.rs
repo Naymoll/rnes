@@ -6,12 +6,12 @@ pub struct Instruction {
     pub opcode: u8,
     pub len: u8,
     pub cycle: u8,
-    pub addressing_mode: AddressingMode
+    pub addressing_mode: AddressingMode,
 }
 
 #[allow(dead_code)]
 impl Instruction {
-    pub const  fn new(opcode: u8, len: u8, cycle: u8, addressing_mode: AddressingMode) -> Self {
+    pub const fn new(opcode: u8, len: u8, cycle: u8, addressing_mode: AddressingMode) -> Self {
         Instruction {
             opcode,
             len,
@@ -161,13 +161,13 @@ impl Instruction {
             0xC8 => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
 
             //ISC
-            0xE7 => Instruction::new(opcode, 2,5, AddressingMode::ZeroPage),
-            0xF7 => Instruction::new(opcode, 2,6, AddressingMode::ZeroPageX),
-            0xEF => Instruction::new(opcode, 3,6, AddressingMode::Absolute),
-            0xFF => Instruction::new(opcode, 3,7, AddressingMode::AbsoluteX),
-            0xFB => Instruction::new(opcode, 3,7, AddressingMode::AbsoluteY),
-            0xE3 => Instruction::new(opcode, 2,8, AddressingMode::IndirectX),
-            0xF3 => Instruction::new(opcode, 2,8, AddressingMode::IndirectY),
+            0xE7 => Instruction::new(opcode, 2, 5, AddressingMode::ZeroPage),
+            0xF7 => Instruction::new(opcode, 2, 6, AddressingMode::ZeroPageX),
+            0xEF => Instruction::new(opcode, 3, 6, AddressingMode::Absolute),
+            0xFF => Instruction::new(opcode, 3, 7, AddressingMode::AbsoluteX),
+            0xFB => Instruction::new(opcode, 3, 7, AddressingMode::AbsoluteY),
+            0xE3 => Instruction::new(opcode, 2, 8, AddressingMode::IndirectX),
+            0xF3 => Instruction::new(opcode, 2, 8, AddressingMode::IndirectY),
 
             //JMP
             0x4C => Instruction::new(opcode, 3, 3, AddressingMode::Absolute),
@@ -177,18 +177,18 @@ impl Instruction {
             0x20 => Instruction::new(opcode, 3, 6, AddressingMode::Absolute),
 
             //KIL
-            0x02 => Instruction::new(opcode, 1,2, AddressingMode::Implied),
-            0x12 => Instruction::new(opcode, 1,2, AddressingMode::Implied),
-            0x22 => Instruction::new(opcode, 1,2, AddressingMode::Implied),
-            0x32 => Instruction::new(opcode, 1,2, AddressingMode::Implied),
-            0x42 => Instruction::new(opcode, 1,2, AddressingMode::Implied),
-            0x52 => Instruction::new(opcode, 1,2, AddressingMode::Implied),
-            0x62 => Instruction::new(opcode, 1,2, AddressingMode::Implied),
-            0x72 => Instruction::new(opcode, 1,2, AddressingMode::Implied),
-            0x92 => Instruction::new(opcode, 1,2, AddressingMode::Implied),
-            0xB2 => Instruction::new(opcode, 1,2, AddressingMode::Implied),
-            0xD2 => Instruction::new(opcode, 1,2, AddressingMode::Implied),
-            0xF2 => Instruction::new(opcode, 1,2, AddressingMode::Implied),
+            0x02 => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
+            0x12 => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
+            0x22 => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
+            0x32 => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
+            0x42 => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
+            0x52 => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
+            0x62 => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
+            0x72 => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
+            0x92 => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
+            0xB2 => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
+            0xD2 => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
+            0xF2 => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
 
             //LAS
             0xBB => Instruction::new(opcode, 3, 2, AddressingMode::AbsoluteY),
@@ -239,15 +239,15 @@ impl Instruction {
             0xEA => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
 
             //NOP unofficial
-            0x80 => Instruction::new(opcode, 2,2, AddressingMode::Immediate),
-            0x82 => Instruction::new(opcode, 2,2, AddressingMode::Immediate),
-            0x89 => Instruction::new(opcode, 2,2, AddressingMode::Immediate),
-            0xC2 => Instruction::new(opcode, 2,2, AddressingMode::Immediate),
-            0xE2 => Instruction::new(opcode, 2,2, AddressingMode::Immediate),
+            0x80 => Instruction::new(opcode, 2, 2, AddressingMode::Immediate),
+            0x82 => Instruction::new(opcode, 2, 2, AddressingMode::Immediate),
+            0x89 => Instruction::new(opcode, 2, 2, AddressingMode::Immediate),
+            0xC2 => Instruction::new(opcode, 2, 2, AddressingMode::Immediate),
+            0xE2 => Instruction::new(opcode, 2, 2, AddressingMode::Immediate),
 
-            0x04 => Instruction::new(opcode, 2,3, AddressingMode::ZeroPage),
-            0x44 => Instruction::new(opcode, 2,3, AddressingMode::ZeroPage),
-            0x64 => Instruction::new(opcode, 2,3, AddressingMode::ZeroPage),
+            0x04 => Instruction::new(opcode, 2, 3, AddressingMode::ZeroPage),
+            0x44 => Instruction::new(opcode, 2, 3, AddressingMode::ZeroPage),
+            0x64 => Instruction::new(opcode, 2, 3, AddressingMode::ZeroPage),
             0x14 => Instruction::new(opcode, 2, 4, AddressingMode::ZeroPageX),
             0x34 => Instruction::new(opcode, 2, 4, AddressingMode::ZeroPageX),
             0x54 => Instruction::new(opcode, 2, 4, AddressingMode::ZeroPageX),
@@ -262,12 +262,12 @@ impl Instruction {
             0xDC => Instruction::new(opcode, 3, 4, AddressingMode::AbsoluteX),
             0xFC => Instruction::new(opcode, 3, 4, AddressingMode::AbsoluteX),
 
-            0x1A => Instruction::new(opcode, 1,2, AddressingMode::Implied),
-            0x3A => Instruction::new(opcode, 1,2, AddressingMode::Implied),
-            0x5A => Instruction::new(opcode, 1,2, AddressingMode::Implied),
-            0x7A => Instruction::new(opcode, 1,2, AddressingMode::Implied),
-            0xDA => Instruction::new(opcode, 1,2, AddressingMode::Implied),
-            0xFA => Instruction::new(opcode, 1,2, AddressingMode::Implied),
+            0x1A => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
+            0x3A => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
+            0x5A => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
+            0x7A => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
+            0xDA => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
+            0xFA => Instruction::new(opcode, 1, 2, AddressingMode::Implied),
 
             //ORA
             0x09 => Instruction::new(opcode, 2, 2, AddressingMode::Immediate),
@@ -342,7 +342,7 @@ impl Instruction {
             0xF1 => Instruction::new(opcode, 2, 5, AddressingMode::IndirectY),
 
             //SBC unofficial
-            0xEB => Instruction::new(opcode, 2,2, AddressingMode::Immediate),
+            0xEB => Instruction::new(opcode, 2, 2, AddressingMode::Immediate),
 
             //SEC
             0x38 => Instruction::new(opcode, 1, 2, AddressingMode::Implied),

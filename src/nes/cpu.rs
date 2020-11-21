@@ -1,5 +1,5 @@
-use crate::nes::mem::Memory;
 use crate::nes::instruction::Instruction;
+use crate::nes::mem::Memory;
 
 pub enum AddressingMode {
     Immediate,
@@ -72,13 +72,13 @@ impl CPU {
 
             match opcode {
                 //ADC
-                0x69 | 0x65 | 0x75 | 0x6D | 0x7D | 0x79 | 0x61 |0x71 => {
+                0x69 | 0x65 | 0x75 | 0x6D | 0x7D | 0x79 | 0x61 | 0x71 => {
                     let addressing_mode = instruction.addressing_mode;
                     let address = self.address(addressing_mode);
                     let value = self.read_u8(address);
 
                     self.adc(value);
-                },
+                }
                 //AND
                 0x29 | 0x25 | 0x35 | 0x2D | 0x3D | 0x39 | 0x21 | 0x31 => {
                     let addressing_mode = instruction.addressing_mode;
@@ -86,7 +86,7 @@ impl CPU {
                     let value = self.read_u8(address);
 
                     self.set_register(Register::Accumulator, self.accumulator & value);
-                },
+                }
                 //ASL
                 0x0A | 0x06 | 0x16 | 0x0E | 0x1E => {
                     let addressing_mode = instruction.addressing_mode;
@@ -95,16 +95,16 @@ impl CPU {
                         AddressingMode::Accumulator => {
                             let value = self.asl(self.accumulator);
                             self.set_register(Register::Accumulator, value);
-                        },
+                        }
                         _ => {
                             let address = self.address(addressing_mode);
                             let mut value = self.read_u8(address);
                             value = self.asl(value);
 
                             self.write_u8(address, value);
-                        },
+                        }
                     }
-                },
+                }
                 //BIT
                 0x24 | 0x2C => {
                     let addressing_mode = instruction.addressing_mode;
@@ -112,23 +112,23 @@ impl CPU {
                     let value = self.read_u8(address);
 
                     self.bit(value);
-                },
+                }
                 //CLC
                 0x18 => {
                     self.set_carry_flag(false);
-                },
+                }
                 //CLD
                 0xD8 => {
                     self.set_decimal_mode_flag(false);
-                },
+                }
                 //CLI
                 0x58 => {
                     self.set_interrupt_disable_flag(false);
-                },
+                }
                 //CLV
                 0xB8 => {
                     self.set_overflow_flag(false);
-                },
+                }
                 //CMP
                 0xC9 | 0xC5 | 0xD5 | 0xCD | 0xDD | 0xD9 | 0xC1 | 0xD1 => {
                     let addressing_mode = instruction.addressing_mode;
@@ -136,7 +136,7 @@ impl CPU {
                     let value = self.read_u8(address);
 
                     self.compare(self.accumulator, value);
-                },
+                }
                 //CPX
                 0xE0 | 0xE4 | 0xEC => {
                     let addressing_mode = instruction.addressing_mode;
@@ -144,7 +144,7 @@ impl CPU {
                     let value = self.read_u8(address);
 
                     self.compare(self.register_x, value);
-                },
+                }
                 //CPY
                 0xC0 | 0xC4 | 0xCC => {
                     let addressing_mode = instruction.addressing_mode;
@@ -152,7 +152,7 @@ impl CPU {
                     let value = self.read_u8(address);
 
                     self.compare(self.register_y, value);
-                },
+                }
                 //DEC
                 0xC6 | 0xD6 | 0xCE | 0xDE => {
                     let addressing_mode = instruction.addressing_mode;
@@ -161,15 +161,15 @@ impl CPU {
 
                     value = self.decrement(value);
                     self.write_u8(address, value);
-                },
+                }
                 //DEX
                 0xCA => {
                     self.register_x = self.decrement(self.register_x);
-                },
+                }
                 //DEY
                 0x88 => {
                     self.register_y = self.decrement(self.register_y);
-                },
+                }
                 //EOR
                 0x49 | 0x45 | 0x55 | 0x4D | 0x5D | 0x59 | 0x41 | 0x51 => {
                     let addressing_mode = instruction.addressing_mode;
@@ -177,39 +177,39 @@ impl CPU {
                     let value = self.read_u8(address);
 
                     self.set_register(Register::Accumulator, self.accumulator ^ value);
-                },
+                }
                 //INC
-                0xE6 | 0xF6 | 0xEE |0xFE => {
+                0xE6 | 0xF6 | 0xEE | 0xFE => {
                     let addressing_mode = instruction.addressing_mode;
                     let address = self.address(addressing_mode);
                     let mut value = self.read_u8(address);
 
                     value = self.increment(value);
                     self.write_u8(address, value);
-                },
+                }
                 //INX
                 0xE8 => {
                     self.register_x = self.increment(self.register_x);
-                },
+                }
                 //INY
                 0xC8 => {
                     self.register_y = self.increment(self.register_y);
-                },
+                }
                 //JMP
                 0x4C | 0x6C => {
                     let addressing_mode = instruction.addressing_mode;
                     let address = self.address(addressing_mode);
 
                     self.program_counter = address;
-                },
+                }
                 //LDA
-                0xA9 | 0xA5 | 0xB5 | 0xAD |0xBD | 0xB9 |0xA1 | 0xB1 => {
+                0xA9 | 0xA5 | 0xB5 | 0xAD | 0xBD | 0xB9 | 0xA1 | 0xB1 => {
                     let addressing_mode = instruction.addressing_mode;
                     let address = self.address(addressing_mode);
                     let value = self.read_u8(address);
 
                     self.set_register(Register::Accumulator, value);
-                },
+                }
                 //LDX
                 0xA2 | 0xA6 | 0xB6 | 0xAE | 0xBE => {
                     let addressing_mode = instruction.addressing_mode;
@@ -217,7 +217,7 @@ impl CPU {
                     let value = self.read_u8(address);
 
                     self.set_register(Register::X, value);
-                },
+                }
                 //LDY
                 0xA0 | 0xA4 | 0xB4 | 0xAC | 0xBC => {
                     let addressing_mode = instruction.addressing_mode;
@@ -225,7 +225,7 @@ impl CPU {
                     let value = self.read_u8(address);
 
                     self.set_register(Register::Y, value);
-                },
+                }
                 //LSR
                 0x4A | 0x46 | 0x56 | 0x4E | 0x5E => {
                     let addressing_mode = instruction.addressing_mode;
@@ -234,18 +234,18 @@ impl CPU {
                         AddressingMode::Accumulator => {
                             let value = self.lsr(self.accumulator);
                             self.set_register(Register::Accumulator, value);
-                        },
+                        }
                         _ => {
                             let address = self.address(addressing_mode);
                             let mut value = self.read_u8(address);
                             value = self.lsr(value);
 
                             self.write_u8(address, value);
-                        },
+                        }
                     }
-                },
+                }
                 //NOP
-                0xEA => { },
+                0xEA => {}
                 //ORA
                 0x09 | 0x05 | 0x15 | 0x0D | 0x1D | 0x19 | 0x01 | 0x11 => {
                     let addressing_mode = instruction.addressing_mode;
@@ -253,7 +253,7 @@ impl CPU {
                     let value = self.read_u8(address);
 
                     self.set_register(Register::Accumulator, self.accumulator | value);
-                },
+                }
                 //ROL
                 0x2A | 0x26 | 0x36 | 0x2E | 0x3E => {
                     let addressing_mode = instruction.addressing_mode;
@@ -262,16 +262,16 @@ impl CPU {
                         AddressingMode::Accumulator => {
                             let value = self.rol(self.accumulator);
                             self.set_register(Register::Accumulator, value);
-                        },
+                        }
                         _ => {
                             let address = self.address(addressing_mode);
                             let mut value = self.read_u8(address);
                             value = self.rol(value);
 
                             self.write_u8(address, value);
-                        },
+                        }
                     }
-                },
+                }
                 //ROR
                 0x6A | 0x66 | 0x76 | 0x6E | 0x7E => {
                     let addressing_mode = instruction.addressing_mode;
@@ -280,16 +280,16 @@ impl CPU {
                         AddressingMode::Accumulator => {
                             let value = self.ror(self.accumulator);
                             self.set_register(Register::Accumulator, value);
-                        },
+                        }
                         _ => {
                             let address = self.address(addressing_mode);
                             let mut value = self.read_u8(address);
                             value = self.ror(value);
 
                             self.write_u8(address, value);
-                        },
+                        }
                     }
-                },
+                }
                 //SBC
                 0xE9 | 0xE5 | 0xF5 | 0xED | 0xFD | 0xF9 | 0xE1 | 0xF1 => {
                     let addressing_mode = instruction.addressing_mode;
@@ -297,64 +297,64 @@ impl CPU {
                     let value = self.read_u8(address);
 
                     self.sbc(value);
-                },
+                }
                 //SEC
                 0x38 => {
                     self.set_carry_flag(true);
-                },
+                }
                 //SED
                 0xF8 => {
                     self.set_decimal_mode_flag(true);
-                },
+                }
                 //SEI
                 0x78 => {
                     self.set_interrupt_disable_flag(true);
-                },
+                }
                 //STA
                 0x85 | 0x95 | 0x8D | 0x9D | 0x99 | 0x81 | 0x91 => {
                     let addressing_mode = instruction.addressing_mode;
                     let address = self.address(addressing_mode);
 
                     self.write_u8(address, self.accumulator);
-                },
+                }
                 //STX
                 0x86 | 0x96 | 0x8E => {
                     let addressing_mode = instruction.addressing_mode;
                     let address = self.address(addressing_mode);
 
                     self.write_u8(address, self.register_x);
-                },
+                }
                 //STY
                 0x84 | 0x94 | 0x8C => {
                     let addressing_mode = instruction.addressing_mode;
                     let address = self.address(addressing_mode);
 
                     self.write_u8(address, self.register_y);
-                },
+                }
                 //TAX
                 0xAA => {
                     self.set_register(Register::X, self.accumulator);
-                },
+                }
                 //TAY
                 0xA8 => {
                     self.set_register(Register::Y, self.accumulator);
-                },
+                }
                 //TSX
                 0xBA => {
                     self.set_register(Register::X, self.stack_pointer);
-                },
+                }
                 //TXA
                 0x8A => {
                     self.set_register(Register::Accumulator, self.register_x);
-                },
+                }
                 //TXS
                 0x9A => {
                     self.set_register(Register::Stack, self.register_x);
-                },
+                }
                 //TYA
                 0x98 => {
                     self.set_register(Register::Accumulator, self.register_y);
-                },
+                }
                 _ => unimplemented!("That opcode unimplemented"),
             }
 
@@ -412,8 +412,10 @@ impl CPU {
             AddressingMode::Relative => {
                 let offset = self.read_u8(self.program_counter) as i8;
                 match offset.is_negative() {
-                    true => self.program_counter.wrapping_sub((offset.saturating_abs() as u16) + 1),
-                    false => self.program_counter.wrapping_add(offset as u16)
+                    true => self
+                        .program_counter
+                        .wrapping_sub((offset.saturating_abs() as u16) + 1),
+                    false => self.program_counter.wrapping_add(offset as u16),
                 }
             }
 
@@ -452,7 +454,8 @@ impl CPU {
     }
 
     fn update_negative_flag(&mut self, value: u8) {
-        self.status.set(CpuFlags::NEGATIVE, (value & 0b1000_0000) != 0);
+        self.status
+            .set(CpuFlags::NEGATIVE, (value & 0b1000_0000) != 0);
     }
 
     fn set_register(&mut self, register: Register, value: u8) {
@@ -477,7 +480,7 @@ impl CPU {
         self.set_carry_flag(sum & CARRY_MASK != 0);
         self.set_overflow_flag(sum & OVERFLOW_MASK != 0);
 
-        self.set_register(Register::Accumulator,sum as u8);
+        self.set_register(Register::Accumulator, sum as u8);
     }
 
     //TODO: ИСПРАВИТЬ - ОБНОВЛЕНИЕ ФЛАГА ZERO ТОЛЬКО ПРИ АККУМ
@@ -493,7 +496,7 @@ impl CPU {
 
     fn bit(&mut self, value: u8) {
         self.update_zero_flag(self.accumulator & value);
-        self.set_overflow_flag((value & 0b0100_000) != 0);
+        self.set_overflow_flag((value & 0b0100_0000) != 0);
         self.update_negative_flag(value);
     }
 
@@ -536,10 +539,11 @@ impl CPU {
     fn rol(&mut self, mut value: u8) -> u8 {
         let new_carry = (value & 0b1000_0000) != 0;
 
-        value = (value << 1) | match self.status.contains(CpuFlags::CARRY) {
-            true => 0b0000_0001,
-            false => 0b0000_0000,
-        };
+        value = (value << 1)
+            | match self.status.contains(CpuFlags::CARRY) {
+                true => 0b0000_0001,
+                false => 0b0000_0000,
+            };
 
         self.set_carry_flag(new_carry);
         self.update_zero_flag(value);
@@ -552,10 +556,11 @@ impl CPU {
     fn ror(&mut self, mut value: u8) -> u8 {
         let new_carry = (value & 0b0000_0001) != 0;
 
-        value = (value >> 1) | match self.status.contains(CpuFlags::CARRY) {
-            true => 0b1000_0000,
-            false => 0b0000_0000,
-        };
+        value = (value >> 1)
+            | match self.status.contains(CpuFlags::CARRY) {
+                true => 0b1000_0000,
+                false => 0b0000_0000,
+            };
 
         self.set_carry_flag(new_carry);
         self.update_zero_flag(value);
