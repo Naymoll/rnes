@@ -95,14 +95,14 @@ impl CPU {
                         AddressingMode::Accumulator => {
                             let value = self.asl(self.accumulator);
                             self.set_register(Register::Accumulator, value);
-                        }
+                        },
                         _ => {
                             let address = self.address(addressing_mode);
                             let mut value = self.read_u8(address);
                             value = self.asl(value);
 
                             self.write_u8(address, value);
-                        }
+                        },
                     }
                 },
                 //BIT
@@ -234,14 +234,14 @@ impl CPU {
                         AddressingMode::Accumulator => {
                             let value = self.lsr(self.accumulator);
                             self.set_register(Register::Accumulator, value);
-                        }
+                        },
                         _ => {
                             let address = self.address(addressing_mode);
                             let mut value = self.read_u8(address);
                             value = self.lsr(value);
 
                             self.write_u8(address, value);
-                        }
+                        },
                     }
                 },
                 //NOP
@@ -262,14 +262,14 @@ impl CPU {
                         AddressingMode::Accumulator => {
                             let value = self.rol(self.accumulator);
                             self.set_register(Register::Accumulator, value);
-                        }
+                        },
                         _ => {
                             let address = self.address(addressing_mode);
                             let mut value = self.read_u8(address);
                             value = self.rol(value);
 
                             self.write_u8(address, value);
-                        }
+                        },
                     }
                 },
                 //ROR
@@ -280,14 +280,14 @@ impl CPU {
                         AddressingMode::Accumulator => {
                             let value = self.ror(self.accumulator);
                             self.set_register(Register::Accumulator, value);
-                        }
+                        },
                         _ => {
                             let address = self.address(addressing_mode);
                             let mut value = self.read_u8(address);
                             value = self.ror(value);
 
                             self.write_u8(address, value);
-                        }
+                        },
                     }
                 },
                 //SBC
