@@ -411,9 +411,6 @@ impl Instruction {
 
             //XAA
             0x8B => Instruction::new(opcode, 2, 3, AddressingMode::Immediate),
-
-            _ => unreachable!(),
         }
     }
 }
-//const LDA: Opcode = Opcode::new(0x69, "LDA", 2, 10, AddressingMode::Immediate);
