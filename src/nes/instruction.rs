@@ -1,5 +1,4 @@
 use crate::nes::cpu::AddressingMode;
-use crate::nes::cpu::AddressingMode::IndirectY;
 
 #[allow(dead_code)]
 pub struct Instruction {

@@ -87,6 +87,42 @@ impl CPU {
 
                     self.set_register(Register::Accumulator, self.accumulator & value);
                 }
+                //AHX
+                0x93 | 0x9F => {
+                    let addressing_mode = instruction.addressing_mode;
+                    let address = self.address(addressing_mode);
+
+                    self.write_u8(
+                        address,
+                        self.accumulator & self.register_x & (address >> 8) as u8,
+                    );
+                }
+                //TODO: Не работает, пока не доделан lsr. Возможно стоит написать отдельную функцию AND для  аккумулятора
+                //ALR
+                0x4B => {
+                    let value = self.read_u8(self.program_counter);
+                    self.set_register(Register::Accumulator, self.accumulator & value);
+                    self.lsr(self.accumulator);
+                }
+                //ANC
+                0x0B | 0x2B => {
+                    let value = self.read_u8(self.program_counter);
+                    self.set_register(Register::Accumulator, self.accumulator & value);
+                    self.set_carry_flag(self.status.contains(CpuFlags::NEGATIVE));
+                }
+                //TODO: Проверить правильность установки флагов, тоже что и ALR
+                //ARR
+                0x6B => {
+                    let value = self.read_u8(self.program_counter);
+                    self.set_register(Register::Accumulator, self.accumulator & value);
+                    self.ror(self.accumulator);
+
+                    let bit_5 = (self.accumulator >> 5) & 1;
+                    let bit_6 = (self.accumulator >> 6) & 1;
+
+                    self.set_carry_flag(bit_6 == 1);
+                    self.set_overflow_flag(bit_5 ^ bit_6 == 1);
+                }
                 //ASL
                 0x0A | 0x06 | 0x16 | 0x0E | 0x1E => {
                     let addressing_mode = instruction.addressing_mode;
@@ -358,6 +394,7 @@ impl CPU {
                 _ => unimplemented!("That opcode unimplemented"),
             }
 
+            //TODO: ВОЗМОЖНО!!! Не будет работать с NOP
             self.inc_program_counter(instruction.len as u16 - 1);
         }
     }
