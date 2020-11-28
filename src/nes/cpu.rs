@@ -1,5 +1,5 @@
 use crate::nes::instruction::Instruction;
-use crate::nes::mem::Memory;
+use crate::nes::mem::{Memory, Stack};
 
 pub enum AddressingMode {
     Immediate,
@@ -46,6 +46,10 @@ pub struct CPU {
     pub status: CpuFlags,
     pub memory: [u8; 65536],
 }
+
+//TODO: Сделать название получше
+const STACK_ADDRESS: u16 = 0x0100;
+const STACK_RESET: u16 = 0x01FF;
 
 const CARRY_MASK: u16 = 256;
 const OVERFLOW_MASK: u16 = 128;
@@ -712,6 +716,28 @@ impl Memory for CPU {
         let bytes = value.to_le_bytes();
         self.memory[address as usize] = bytes[0];
         self.memory[address.wrapping_add(1) as usize] = bytes[1];
+    }
+}
+
+impl Stack for CPU {
+    fn pop_u8(&mut self) -> u8 {
+        self.stack_pointer = self.stack_pointer.wrapping_add(1);
+        self.read_u8(STACK_ADDRESS + self.stack_pointer as u16)
+    }
+
+    fn pop_u16(&mut self) -> u16 {
+        self.stack_pointer = self.stack_pointer.wrapping_add(2);
+        self.read_u16(STACK_ADDRESS + self.stack_pointer as u16)
+    }
+
+    fn push_u8(&mut self, value: u8) {
+        self.write_u8(STACK_ADDRESS + self.stack_pointer as u16, value);
+        self.stack_pointer = self.stack_pointer.wrapping_sub(1);
+    }
+
+    fn push_u16(&mut self, value: u16) {
+        self.write_u16(STACK_ADDRESS + self.stack_pointer as u16, value);
+        self.stack_pointer = self.stack_pointer.wrapping_sub(2);
     }
 }
 
