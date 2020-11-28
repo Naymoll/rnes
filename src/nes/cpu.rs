@@ -291,11 +291,15 @@ impl CPU {
 
                     self.program_counter = address;
                 }
-                //TODO: Сделать операции со стеком
                 //JSR
                 0x20 => {
+                    self.push_u16(self.program_counter.wrapping_add(2));
+
                     let addressing_mode = instruction.addressing_mode;
                     let address = self.address(addressing_mode);
+
+                    self.program_counter = address;
+                    continue; //Пропускаем увеличение счетчика в конце блока match
                 }
                 //LDA
                 0xA9 | 0xA5 | 0xB5 | 0xAD | 0xBD | 0xB9 | 0xA1 | 0xB1 => {
@@ -344,6 +348,24 @@ impl CPU {
 
                     self.set_register(Register::Accumulator, self.accumulator | value);
                 }
+                //PHA
+                0x48 => {
+                    self.push_u8(self.accumulator);
+                }
+                //PHP
+                0x08 => {
+                    self.push_u8(self.status.bits);
+                }
+                //PLA
+                0x68 => {
+                    let stack_val = self.pop_u8();
+                    self.set_register(Register::Accumulator, stack_val);
+                }
+                //PLP
+                0x28 => {
+                    self.status.bits = self.pop_u8();
+                    self.status.insert(CpuFlags::ONE);
+                }
                 //ROL
                 0x2A | 0x26 | 0x36 | 0x2E | 0x3E => {
                     let addressing_mode = instruction.addressing_mode;
@@ -369,6 +391,11 @@ impl CPU {
                             self.ror_mem(addressing_mode);
                         }
                     }
+                }
+                //RTS
+                0x60 => {
+                    self.program_counter = self.pop_u16();
+                    continue; //Пропускаем увеличение счетчика в конце блока match
                 }
                 //SBC
                 0xE9 | 0xE5 | 0xF5 | 0xED | 0xFD | 0xF9 | 0xE1 | 0xF1 => {
