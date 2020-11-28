@@ -97,7 +97,7 @@ impl CPU {
                         self.accumulator & self.register_x & (address >> 8) as u8,
                     );
                 }
-                //TODO: Не работает, пока не доделан lsr. Возможно стоит написать отдельную функцию AND для  аккумулятора
+                //TODO: Проверить
                 //ALR
                 0x4B => {
                     let value = self.read_u8(self.program_counter);
@@ -110,7 +110,7 @@ impl CPU {
                     self.set_register(Register::Accumulator, self.accumulator & value);
                     self.set_carry_flag(self.status.contains(CpuFlags::NEGATIVE));
                 }
-                //TODO: Проверить правильность установки флагов, тоже что и ALR
+                //TODO: Проверить правильность установки флагов
                 //ARR
                 0x6B => {
                     let value = self.read_u8(self.program_counter);
@@ -136,6 +136,41 @@ impl CPU {
                         }
                     }
                 }
+                //TODO: Стоит ли приводить к u16?
+                //AXS
+                0xCB => {
+                    let addressing_mode = instruction.addressing_mode;
+                    let address = self.address(addressing_mode);
+                    let value = self.read_u8(address);
+
+                    let and = self.accumulator & self.register_x;
+                    let result = (and as u16).wrapping_sub(value as u16);
+
+                    self.set_carry_flag(result & CARRY_MASK != 0);
+                    self.set_register(Register::X, result as u8);
+                }
+                //TODO: Стоит ли делать два раза приведение?
+                //BCC
+                0x90 => {
+                    match self.status.contains(CpuFlags::CARRY) {
+                        true => {},
+                        false => self.branch(),
+                    }
+                }
+                //BCS
+                0xB0 => {
+                    match self.status.contains(CpuFlags::CARRY) {
+                        true => self.branch(),
+                        false => {},
+                    }
+                }
+                //BEQ
+                0xF0 => {
+                    match self.status.contains(CpuFlags::ZERO) {
+                        true => self.branch(),
+                        false => {},
+                    }
+                }
                 //BIT
                 0x24 | 0x2C => {
                     let addressing_mode = instruction.addressing_mode;
@@ -143,6 +178,41 @@ impl CPU {
                     let value = self.read_u8(address);
 
                     self.bit(value);
+                }
+                //BMI
+                0x30 => {
+                    match self.status.contains(CpuFlags::NEGATIVE) {
+                        true => self.branch(),
+                        false => {},
+                    }
+                }
+                //BNE
+                0xD0 => {
+                    match self.status.contains(CpuFlags::ZERO) {
+                        true => {},
+                        false => self.branch(),
+                    }
+                }
+                //BPL
+                0x10 => {
+                    match self.status.contains(CpuFlags::NEGATIVE) {
+                        true => {},
+                        false => self.branch(),
+                    }
+                }
+                //BVC
+                0x50 => {
+                    match self.status.contains(CpuFlags::OVERFLOW) {
+                        true => {},
+                        false => self.branch(),
+                    }
+                }
+                //BVS
+                0x70 => {
+                    match self.status.contains(CpuFlags::OVERFLOW) {
+                        true => self.branch(),
+                        false => {},
+                    }
                 }
                 //CLC
                 0x18 => {
@@ -232,6 +302,12 @@ impl CPU {
                     let address = self.address(addressing_mode);
 
                     self.program_counter = address;
+                }
+                //TODO: Сделать операции со стеком
+                //JSR
+                0x20 => {
+                    let addressing_mode = instruction.addressing_mode;
+                    let address = self.address(addressing_mode);
                 }
                 //LDA
                 0xA9 | 0xA5 | 0xB5 | 0xAD | 0xBD | 0xB9 | 0xA1 | 0xB1 => {
@@ -384,7 +460,7 @@ impl CPU {
     // Написать тесты, скорее всего часть сделано неправильно
     fn address(&self, mode: AddressingMode) -> u16 {
         match mode {
-            AddressingMode::Immediate => self.program_counter,
+            AddressingMode::Immediate | AddressingMode::Relative => self.program_counter,
 
             AddressingMode::ZeroPage => self.read_u8(self.program_counter) as u16,
 
@@ -423,17 +499,6 @@ impl CPU {
             AddressingMode::IndirectY => {
                 let address = self.read_u16(self.program_counter);
                 self.read_u16(address.wrapping_add(self.register_y as u16))
-            }
-
-            //TODO: Проверить корректность saturating_abs
-            AddressingMode::Relative => {
-                let offset = self.read_u8(self.program_counter) as i8;
-                match offset.is_negative() {
-                    true => self
-                        .program_counter
-                        .wrapping_sub((offset.saturating_abs() as u16) + 1),
-                    false => self.program_counter.wrapping_add(offset as u16),
-                }
             }
 
             AddressingMode::Implied | AddressingMode::Accumulator => unreachable!(),
@@ -522,6 +587,11 @@ impl CPU {
         self.update_zero_flag(self.accumulator & value);
         self.set_overflow_flag((value & 0b0100_0000) != 0);
         self.update_negative_flag(value);
+    }
+
+    fn branch(&mut self) {
+        let offset = self.read_u8(self.program_counter) as i8;
+        self.inc_program_counter(offset as u16);
     }
 
     fn compare(&mut self, lhs: u8, rhs: u8) {
@@ -628,7 +698,7 @@ impl CPU {
             false => 1,
         };
 
-        let div = self.accumulator as u16 - value as u16 - carry;
+        let div = (self.accumulator as u16).wrapping_sub(value as u16 + carry);
         self.set_carry_flag(div & CARRY_MASK != 0);
         self.set_overflow_flag(div & OVERFLOW_MASK != 0);
 
