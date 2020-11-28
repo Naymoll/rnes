@@ -151,26 +151,20 @@ impl CPU {
                 }
                 //TODO: Стоит ли делать два раза приведение?
                 //BCC
-                0x90 => {
-                    match self.status.contains(CpuFlags::CARRY) {
-                        true => {},
-                        false => self.branch(),
-                    }
-                }
+                0x90 => match self.status.contains(CpuFlags::CARRY) {
+                    true => {}
+                    false => self.branch(),
+                },
                 //BCS
-                0xB0 => {
-                    match self.status.contains(CpuFlags::CARRY) {
-                        true => self.branch(),
-                        false => {},
-                    }
-                }
+                0xB0 => match self.status.contains(CpuFlags::CARRY) {
+                    true => self.branch(),
+                    false => {}
+                },
                 //BEQ
-                0xF0 => {
-                    match self.status.contains(CpuFlags::ZERO) {
-                        true => self.branch(),
-                        false => {},
-                    }
-                }
+                0xF0 => match self.status.contains(CpuFlags::ZERO) {
+                    true => self.branch(),
+                    false => {}
+                },
                 //BIT
                 0x24 | 0x2C => {
                     let addressing_mode = instruction.addressing_mode;
@@ -180,40 +174,30 @@ impl CPU {
                     self.bit(value);
                 }
                 //BMI
-                0x30 => {
-                    match self.status.contains(CpuFlags::NEGATIVE) {
-                        true => self.branch(),
-                        false => {},
-                    }
-                }
+                0x30 => match self.status.contains(CpuFlags::NEGATIVE) {
+                    true => self.branch(),
+                    false => {}
+                },
                 //BNE
-                0xD0 => {
-                    match self.status.contains(CpuFlags::ZERO) {
-                        true => {},
-                        false => self.branch(),
-                    }
-                }
+                0xD0 => match self.status.contains(CpuFlags::ZERO) {
+                    true => {}
+                    false => self.branch(),
+                },
                 //BPL
-                0x10 => {
-                    match self.status.contains(CpuFlags::NEGATIVE) {
-                        true => {},
-                        false => self.branch(),
-                    }
-                }
+                0x10 => match self.status.contains(CpuFlags::NEGATIVE) {
+                    true => {}
+                    false => self.branch(),
+                },
                 //BVC
-                0x50 => {
-                    match self.status.contains(CpuFlags::OVERFLOW) {
-                        true => {},
-                        false => self.branch(),
-                    }
-                }
+                0x50 => match self.status.contains(CpuFlags::OVERFLOW) {
+                    true => {}
+                    false => self.branch(),
+                },
                 //BVS
-                0x70 => {
-                    match self.status.contains(CpuFlags::OVERFLOW) {
-                        true => self.branch(),
-                        false => {},
-                    }
-                }
+                0x70 => match self.status.contains(CpuFlags::OVERFLOW) {
+                    true => self.branch(),
+                    false => {}
+                },
                 //CLC
                 0x18 => {
                     self.set_carry_flag(false);
@@ -638,10 +622,11 @@ impl CPU {
 
     fn rol_accum(&mut self) {
         let new_carry = (self.accumulator & 0b1000_0000) != 0;
-        let value = self.accumulator << 1 | match self.status.contains(CpuFlags::CARRY) {
-            true => 0b0000_0001,
-            false => 0b0000_0000,
-        };
+        let value = self.accumulator << 1
+            | match self.status.contains(CpuFlags::CARRY) {
+                true => 0b0000_0001,
+                false => 0b0000_0000,
+            };
 
         self.set_carry_flag(new_carry);
         self.set_register(Register::Accumulator, value);
@@ -666,10 +651,11 @@ impl CPU {
 
     fn ror_accum(&mut self) {
         let new_carry = (self.accumulator & 0b0000_0001) != 0;
-        let value = self.accumulator >> 1 | match self.status.contains(CpuFlags::CARRY) {
-            true => 0b1000_0000,
-            false => 0b0000_0000,
-        };
+        let value = self.accumulator >> 1
+            | match self.status.contains(CpuFlags::CARRY) {
+                true => 0b1000_0000,
+                false => 0b0000_0000,
+            };
 
         self.set_carry_flag(new_carry);
         self.set_register(Register::Accumulator, value);

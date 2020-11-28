@@ -1,4 +1,3 @@
-#[allow(dead_code)]
 pub trait Memory {
     fn read_u8(&self, address: u16) -> u8;
     fn read_u16(&self, address: u16) -> u16;
