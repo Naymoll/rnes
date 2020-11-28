@@ -102,7 +102,7 @@ impl CPU {
                 0x4B => {
                     let value = self.read_u8(self.program_counter);
                     self.set_register(Register::Accumulator, self.accumulator & value);
-                    self.lsr(self.accumulator);
+                    self.lsr_accum();
                 }
                 //ANC
                 0x0B | 0x2B => {
@@ -115,7 +115,7 @@ impl CPU {
                 0x6B => {
                     let value = self.read_u8(self.program_counter);
                     self.set_register(Register::Accumulator, self.accumulator & value);
-                    self.ror(self.accumulator);
+                    self.ror_accum();
 
                     let bit_5 = (self.accumulator >> 5) & 1;
                     let bit_6 = (self.accumulator >> 6) & 1;
@@ -129,15 +129,10 @@ impl CPU {
 
                     match addressing_mode {
                         AddressingMode::Accumulator => {
-                            let value = self.asl(self.accumulator);
-                            self.set_register(Register::Accumulator, value);
+                            self.asl_accum();
                         }
                         _ => {
-                            let address = self.address(addressing_mode);
-                            let mut value = self.read_u8(address);
-                            value = self.asl(value);
-
-                            self.write_u8(address, value);
+                            self.asl_mem(addressing_mode);
                         }
                     }
                 }
@@ -268,15 +263,10 @@ impl CPU {
 
                     match addressing_mode {
                         AddressingMode::Accumulator => {
-                            let value = self.lsr(self.accumulator);
-                            self.set_register(Register::Accumulator, value);
+                            self.lsr_accum();
                         }
                         _ => {
-                            let address = self.address(addressing_mode);
-                            let mut value = self.read_u8(address);
-                            value = self.lsr(value);
-
-                            self.write_u8(address, value);
+                            self.lsr_mem(addressing_mode);
                         }
                     }
                 }
@@ -296,15 +286,10 @@ impl CPU {
 
                     match addressing_mode {
                         AddressingMode::Accumulator => {
-                            let value = self.rol(self.accumulator);
-                            self.set_register(Register::Accumulator, value);
+                            self.rol_accum();
                         }
                         _ => {
-                            let address = self.address(addressing_mode);
-                            let mut value = self.read_u8(address);
-                            value = self.rol(value);
-
-                            self.write_u8(address, value);
+                            self.rol_mem(addressing_mode);
                         }
                     }
                 }
@@ -314,15 +299,10 @@ impl CPU {
 
                     match addressing_mode {
                         AddressingMode::Accumulator => {
-                            let value = self.ror(self.accumulator);
-                            self.set_register(Register::Accumulator, value);
+                            self.ror_accum();
                         }
                         _ => {
-                            let address = self.address(addressing_mode);
-                            let mut value = self.read_u8(address);
-                            value = self.ror(value);
-
-                            self.write_u8(address, value);
+                            self.ror_mem(addressing_mode);
                         }
                     }
                 }
@@ -520,15 +500,22 @@ impl CPU {
         self.set_register(Register::Accumulator, sum as u8);
     }
 
-    //TODO: ИСПРАВИТЬ - ОБНОВЛЕНИЕ ФЛАГА ZERO ТОЛЬКО ПРИ АККУМ
-    fn asl(&mut self, mut value: u8) -> u8 {
+    fn asl_accum(&mut self) {
+        self.set_carry_flag((self.accumulator & 0b1000_0000) != 0);
+        self.set_register(Register::Accumulator, self.accumulator << 1);
+    }
+
+    fn asl_mem(&mut self, addressing_mode: AddressingMode) {
+        let address = self.address(addressing_mode);
+        let mut value = self.read_u8(address);
+
         self.set_carry_flag((value & 0b1000_0000) != 0);
 
         value <<= 1;
         self.update_zero_flag(value);
         self.update_negative_flag(value);
 
-        value
+        self.write_u8(address, value);
     }
 
     fn bit(&mut self, value: u8) {
@@ -561,49 +548,78 @@ impl CPU {
         value
     }
 
-    //TODO: ИСПРАВИТЬ - ОБНОВЛЕНИЕ ФЛАГА ZERO ТОЛЬКО ПРИ АККУМ
-    fn lsr(&mut self, mut value: u8) -> u8 {
+    fn lsr_accum(&mut self) {
+        self.set_carry_flag((self.accumulator & 0b0000_0001) != 0);
+        self.set_register(Register::Accumulator, self.accumulator >> 1);
+    }
+
+    fn lsr_mem(&mut self, addressing_mode: AddressingMode) {
+        let address = self.address(addressing_mode);
+        let mut value = self.read_u8(address);
+
         self.set_carry_flag((value & 0b0000_0001) != 0);
 
         value >>= 1;
         self.update_zero_flag(value);
         self.update_negative_flag(value);
 
-        value
+        self.write_u8(address, value);
     }
 
-    //TODO: ИСПРАВИТЬ - ОБНОВЛЕНИЕ ФЛАГА ZERO ТОЛЬКО ПРИ АККУМ
-    fn rol(&mut self, mut value: u8) -> u8 {
+    fn rol_accum(&mut self) {
+        let new_carry = (self.accumulator & 0b1000_0000) != 0;
+        let value = self.accumulator << 1 | match self.status.contains(CpuFlags::CARRY) {
+            true => 0b0000_0001,
+            false => 0b0000_0000,
+        };
+
+        self.set_carry_flag(new_carry);
+        self.set_register(Register::Accumulator, value);
+    }
+
+    fn rol_mem(&mut self, addressing_mode: AddressingMode) {
+        let address = self.address(addressing_mode);
+        let mut value = self.read_u8(address);
+
         let new_carry = (value & 0b1000_0000) != 0;
-
-        value = (value << 1)
-            | match self.status.contains(CpuFlags::CARRY) {
-                true => 0b0000_0001,
-                false => 0b0000_0000,
-            };
+        value <<= 1 | match self.status.contains(CpuFlags::CARRY) {
+            true => 0b0000_0001,
+            false => 0b0000_0000,
+        };
 
         self.set_carry_flag(new_carry);
         self.update_zero_flag(value);
         self.update_negative_flag(value);
 
-        value
+        self.write_u8(address, value);
     }
 
-    //TODO: ИСПРАВИТЬ - ОБНОВЛЕНИЕ ФЛАГА ZERO ТОЛЬКО ПРИ АККУМ
-    fn ror(&mut self, mut value: u8) -> u8 {
-        let new_carry = (value & 0b0000_0001) != 0;
+    fn ror_accum(&mut self) {
+        let new_carry = (self.accumulator & 0b0000_0001) != 0;
+        let value = self.accumulator >> 1 | match self.status.contains(CpuFlags::CARRY) {
+            true => 0b1000_0000,
+            false => 0b0000_0000,
+        };
 
-        value = (value >> 1)
-            | match self.status.contains(CpuFlags::CARRY) {
-                true => 0b1000_0000,
-                false => 0b0000_0000,
-            };
+        self.set_carry_flag(new_carry);
+        self.set_register(Register::Accumulator, value);
+    }
+
+    fn ror_mem(&mut self, addressing_mode: AddressingMode) {
+        let address = self.address(addressing_mode);
+        let mut value = self.read_u8(address);
+
+        let new_carry = (value & 0b0000_0001) != 0;
+        value >>= 1 | match self.status.contains(CpuFlags::CARRY) {
+            true => 0b1000_0000,
+            false => 0b0000_0000,
+        };
 
         self.set_carry_flag(new_carry);
         self.update_zero_flag(value);
         self.update_negative_flag(value);
 
-        value
+        self.write_u8(address, value);
     }
 
     fn sbc(&mut self, value: u8) {
