@@ -1,5 +1,6 @@
 use crate::nes::instruction::Instruction;
 use crate::nes::mem::{Memory, Stack};
+use crate::nes::interrupt::{Interrupt, InterruptType, BRK_INT};
 
 pub enum AddressingMode {
     Immediate,
@@ -192,6 +193,11 @@ impl CPU {
                     true => {}
                     false => self.branch(),
                 },
+                //BRK
+                0x00 => {
+                    self.interrupt(BRK_INT);
+                    self.status.insert(CpuFlags::BREAK);
+                }
                 //BVC
                 0x50 => match self.status.contains(CpuFlags::OVERFLOW) {
                     true => {}
@@ -392,6 +398,11 @@ impl CPU {
                         }
                     }
                 }
+                //RTI
+                0x40 => {
+                    self.status.bits = self.pop_u8();
+                    self.program_counter = self.pop_u16();
+                }
                 //RTS
                 0x60 => {
                     self.program_counter = self.pop_u16();
@@ -518,6 +529,25 @@ impl CPU {
 
             AddressingMode::Implied | AddressingMode::Accumulator => unreachable!(),
         }
+    }
+
+    fn interrupt(&mut self, interrupt: Interrupt) {
+        let interrupt_disable = self.status.contains(CpuFlags::INTERRUPT_DISABLE);
+
+        if interrupt_disable && ((interrupt.int_type == InterruptType::IRQ) || (interrupt.int_type  == InterruptType::BRK)) {
+            return;
+        }
+
+        match interrupt.int_type {
+            InterruptType::Reset => { }
+            _ => {
+                self.push_u16(self.program_counter);
+                self.push_u8(self.status.bits);
+            }
+        }
+
+        self.set_interrupt_disable_flag(true);
+        self.program_counter = self.read_u16(interrupt.vec_addr);
     }
 
     //TODO: Заменить инкремент счеткчика данной функцией,
