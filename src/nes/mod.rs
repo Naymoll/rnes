@@ -1,7 +1,7 @@
 mod cpu;
 mod instruction;
-mod mem;
 mod interrupt;
+mod mem;
 
 use crate::nes::cpu::CPU;
 

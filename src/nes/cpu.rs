@@ -1,6 +1,6 @@
 use crate::nes::instruction::Instruction;
-use crate::nes::mem::{Memory, Stack};
 use crate::nes::interrupt::{Interrupt, InterruptType, BRK_INT};
+use crate::nes::mem::{Memory, Stack};
 
 pub enum AddressingMode {
     Immediate,
@@ -72,7 +72,7 @@ impl CPU {
     pub fn execute_commands(&mut self, commands: std::vec::Vec<u8>) {
         loop {
             let opcode = commands[self.program_counter as usize];
-            let instruction = Instruction::from_opcode(opcode);
+            let instruction = Instruction::from_code(opcode);
             self.inc_program_counter(1);
 
             match opcode {
@@ -196,7 +196,7 @@ impl CPU {
                 //BRK
                 0x00 => {
                     self.interrupt(BRK_INT);
-                    self.status.insert(CpuFlags::BREAK);
+                    self.set_break_command_flag(true);
                 }
                 //BVC
                 0x50 => match self.status.contains(CpuFlags::OVERFLOW) {
@@ -248,6 +248,16 @@ impl CPU {
 
                     self.compare(self.register_y, value);
                 }
+                //TODO: Провярется (value - 1) или value?
+                //DCP
+                0xC7 | 0xD7 | 0xCF | 0xDF | 0xDB | 0xD3 | 0xC3 => {
+                    let addressing_mode = instruction.addressing_mode;
+                    let address = self.address(addressing_mode);
+                    let value = self.read_u8(address).wrapping_sub(1); //DEC
+
+                    self.write_u8(address, value);
+                    self.compare(self.accumulator, value); //CMP
+                }
                 //DEC
                 0xC6 | 0xD6 | 0xCE | 0xDE => {
                     let addressing_mode = instruction.addressing_mode;
@@ -290,6 +300,15 @@ impl CPU {
                 0xC8 => {
                     self.register_y = self.increment(self.register_y);
                 }
+                //ISC
+                0xE7 | 0xF7 | 0xEF | 0xFF | 0xFB | 0xE3 | 0xF3 => {
+                    let addressing_mode = instruction.addressing_mode;
+                    let address = self.address(addressing_mode);
+                    let mut value = self.read_u8(address).wrapping_add(1);
+
+                    self.write_u8(address, value);
+                    self.sbc(value);
+                }
                 //JMP
                 0x4C | 0x6C => {
                     let addressing_mode = instruction.addressing_mode;
@@ -306,6 +325,40 @@ impl CPU {
 
                     self.program_counter = address;
                     continue; //Пропускаем увеличение счетчика в конце блока match
+                }
+                //TODO: Нет четкого описания что делает данная команда.
+                // Вместо бесконечного цикла можно использовать NOP,
+                // заканчивать выполнение или возращать проц в дефолт
+                //KIL
+                0x02 | 0x12 | 0x22 | 0x32 | 0x42 | 0x52 | 0x62 | 0x72 | 0x92 | 0xB2 | 0xD2
+                | 0xF2 => {
+                    //Unofficial opcode, infinite loop
+                    loop {}
+                }
+                //LAS
+                0xBB => {
+                    let addressing_mode = instruction.addressing_mode;
+                    let address = self.address(addressing_mode);
+                    let value = self.read_u8(address) & self.stack_pointer;
+
+                    self.accumulator = value;
+                    self.register_x = value;
+                    self.stack_pointer = value;
+
+                    self.update_negative_flag(value);
+                    self.update_zero_flag(value);
+                }
+                //LAX
+                0xA7 | 0xB7 | 0xAF | 0xBF | 0xA3 | 0xB3 | 0xAB => {
+                    let addressing_mode = instruction.addressing_mode;
+                    let address = self.address(addressing_mode);
+                    let value = self.read_u8(address);
+
+                    self.accumulator = value;
+                    self.register_x = value;
+
+                    self.update_negative_flag(value);
+                    self.update_zero_flag(value);
                 }
                 //LDA
                 0xA9 | 0xA5 | 0xB5 | 0xAD | 0xBD | 0xB9 | 0xA1 | 0xB1 => {
@@ -345,7 +398,9 @@ impl CPU {
                     }
                 }
                 //NOP
-                0xEA => {}
+                0xEA | 0x80 | 0x82 | 0x89 | 0xC2 | 0xE2 | 0x04 | 0x44 | 0x64 | 0x14 | 0x34
+                | 0x54 | 0x74 | 0xD4 | 0xF4 | 0x0C | 0x1C | 0x3C | 0x5C | 0x7C | 0xDC | 0xFC
+                | 0x1A | 0x3A | 0x5A | 0x7A | 0xDA | 0xFA => {}
                 //ORA
                 0x09 | 0x05 | 0x15 | 0x0D | 0x1D | 0x19 | 0x01 | 0x11 => {
                     let addressing_mode = instruction.addressing_mode;
@@ -371,6 +426,13 @@ impl CPU {
                 0x28 => {
                     self.status.bits = self.pop_u8();
                     self.status.insert(CpuFlags::ONE);
+                }
+                //RLA
+                0x27 | 0x37 | 0x2F | 0x3F | 0x3B | 0x33 | 0x23 => {
+                    let addressing_mode = instruction.addressing_mode;
+                    let value = self.rol_mem(addressing_mode);
+
+                    self.set_register(Register::Accumulator, self.accumulator & value);
                 }
                 //ROL
                 0x2A | 0x26 | 0x36 | 0x2E | 0x3E => {
@@ -398,6 +460,13 @@ impl CPU {
                         }
                     }
                 }
+                //RRA
+                0x67 | 0x77 | 0x6F | 0x7F | 0x7B | 0x63 | 0x73 => {
+                    let addressing_mode = instruction.addressing_mode;
+                    let value = self.ror_mem(addressing_mode);
+
+                    self.adc(value);
+                }
                 //RTI
                 0x40 => {
                     self.status.bits = self.pop_u8();
@@ -408,8 +477,15 @@ impl CPU {
                     self.program_counter = self.pop_u16();
                     continue; //Пропускаем увеличение счетчика в конце блока match
                 }
+                //SAX
+                0x87 | 0x97 | 0x8F | 0x83 => {
+                    let addressing_mode = instruction.addressing_mode;
+                    let address = self.address(addressing_mode);
+
+                    self.write_u8(address, self.accumulator & self.register_x);
+                }
                 //SBC
-                0xE9 | 0xE5 | 0xF5 | 0xED | 0xFD | 0xF9 | 0xE1 | 0xF1 => {
+                0xE9 | 0xE5 | 0xF5 | 0xED | 0xFD | 0xF9 | 0xE1 | 0xF1 | 0xEB => {
                     let addressing_mode = instruction.addressing_mode;
                     let address = self.address(addressing_mode);
                     let value = self.read_u8(address);
@@ -427,6 +503,34 @@ impl CPU {
                 //SEI
                 0x78 => {
                     self.set_interrupt_disable_flag(true);
+                }
+                //SHX
+                0x9E => {
+                    let addressing_mode = instruction.addressing_mode;
+                    let address = self.address(addressing_mode);
+
+                    self.write_u8(address, self.register_x & address.to_be_bytes()[0]);
+                }
+                //SHY
+                0x9C => {
+                    let addressing_mode = instruction.addressing_mode;
+                    let address = self.address(addressing_mode);
+
+                    self.write_u8(address, self.register_y & address.to_be_bytes()[0]);
+                }
+                //SLO
+                0x07 | 0x17 | 0x0F | 0x1F | 0x1B | 0x03 | 0x13 => {
+                    let addressing_mode = instruction.addressing_mode;
+                    let value = self.asl_mem(addressing_mode);
+
+                    self.set_register(Register::Accumulator, self.accumulator | value);
+                }
+                //SRE
+                0x47 | 0x57 | 0x4F | 0x5F | 0x5B | 0x43 | 0x53 => {
+                    let addressing_mode = instruction.addressing_mode;
+                    let value = self.lsr_mem(addressing_mode);
+
+                    self.set_register(Register::Accumulator, self.accumulator ^ value);
                 }
                 //STA
                 0x85 | 0x95 | 0x8D | 0x9D | 0x99 | 0x81 | 0x91 => {
@@ -448,6 +552,15 @@ impl CPU {
                     let address = self.address(addressing_mode);
 
                     self.write_u8(address, self.register_y);
+                }
+                //TAS
+                0x9B => {
+                    self.stack_pointer = self.accumulator & self.register_x;
+
+                    let addressing_mode = instruction.addressing_mode;
+                    let address = self.address(addressing_mode);
+
+                    self.write_u8(address, self.register_y & address.to_be_bytes()[0]);
                 }
                 //TAX
                 0xAA => {
@@ -473,10 +586,17 @@ impl CPU {
                 0x98 => {
                     self.set_register(Register::Accumulator, self.register_y);
                 }
+                //XAA
+                0x8B => {
+                    let addressing_mode = instruction.addressing_mode;
+                    let address = self.address(addressing_mode);
+                    let value = self.read_u8(address);
+
+                    self.set_register(Register::Accumulator, self.register_x & value);
+                }
                 _ => unimplemented!("That opcode unimplemented"),
             }
 
-            //TODO: ВОЗМОЖНО!!! Не будет работать с NOP
             self.inc_program_counter(instruction.len as u16 - 1);
         }
     }
@@ -534,12 +654,15 @@ impl CPU {
     fn interrupt(&mut self, interrupt: Interrupt) {
         let interrupt_disable = self.status.contains(CpuFlags::INTERRUPT_DISABLE);
 
-        if interrupt_disable && ((interrupt.int_type == InterruptType::IRQ) || (interrupt.int_type  == InterruptType::BRK)) {
+        if interrupt_disable
+            && ((interrupt.int_type == InterruptType::IRQ)
+                || (interrupt.int_type == InterruptType::BRK))
+        {
             return;
         }
 
         match interrupt.int_type {
-            InterruptType::Reset => { }
+            InterruptType::Reset => {}
             _ => {
                 self.push_u16(self.program_counter);
                 self.push_u8(self.status.bits);
@@ -615,7 +738,7 @@ impl CPU {
         self.set_register(Register::Accumulator, self.accumulator << 1);
     }
 
-    fn asl_mem(&mut self, addressing_mode: AddressingMode) {
+    fn asl_mem(&mut self, addressing_mode: AddressingMode) -> u8 {
         let address = self.address(addressing_mode);
         let mut value = self.read_u8(address);
 
@@ -626,6 +749,8 @@ impl CPU {
         self.update_negative_flag(value);
 
         self.write_u8(address, value);
+
+        value
     }
 
     fn bit(&mut self, value: u8) {
@@ -668,7 +793,7 @@ impl CPU {
         self.set_register(Register::Accumulator, self.accumulator >> 1);
     }
 
-    fn lsr_mem(&mut self, addressing_mode: AddressingMode) {
+    fn lsr_mem(&mut self, addressing_mode: AddressingMode) -> u8 {
         let address = self.address(addressing_mode);
         let mut value = self.read_u8(address);
 
@@ -679,6 +804,8 @@ impl CPU {
         self.update_negative_flag(value);
 
         self.write_u8(address, value);
+
+        value
     }
 
     fn rol_accum(&mut self) {
@@ -693,7 +820,7 @@ impl CPU {
         self.set_register(Register::Accumulator, value);
     }
 
-    fn rol_mem(&mut self, addressing_mode: AddressingMode) {
+    fn rol_mem(&mut self, addressing_mode: AddressingMode) -> u8 {
         let address = self.address(addressing_mode);
         let mut value = self.read_u8(address);
 
@@ -708,6 +835,8 @@ impl CPU {
         self.update_negative_flag(value);
 
         self.write_u8(address, value);
+
+        value
     }
 
     fn ror_accum(&mut self) {
@@ -722,7 +851,7 @@ impl CPU {
         self.set_register(Register::Accumulator, value);
     }
 
-    fn ror_mem(&mut self, addressing_mode: AddressingMode) {
+    fn ror_mem(&mut self, addressing_mode: AddressingMode) -> u8 {
         let address = self.address(addressing_mode);
         let mut value = self.read_u8(address);
 
@@ -737,6 +866,8 @@ impl CPU {
         self.update_negative_flag(value);
 
         self.write_u8(address, value);
+
+        value
     }
 
     fn sbc(&mut self, value: u8) {
