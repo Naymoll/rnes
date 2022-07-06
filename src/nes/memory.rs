@@ -18,7 +18,7 @@ pub trait Stack<V, A>: Memory<V, A> {
         value
     }
 
-    fn pull(&mut self, value: V) {
+    fn push(&mut self, value: V) {
         self.write(self.pointer(), value);
         self.decrement_pointer();
     }
