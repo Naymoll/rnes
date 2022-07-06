@@ -3,6 +3,7 @@
 
 mod instructions;
 mod macros;
+mod nes;
 
 fn main() {
     println!("Hello, world!");
