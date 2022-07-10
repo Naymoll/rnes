@@ -13,7 +13,7 @@ pub trait Instruction {
 }
 
 #[derive(Error, Debug)]
-#[error("invalid opcode (expected {expected}, found {found})")]
+#[error("invalid opcode (expected {expected:#X}, found {found:#X})")]
 pub struct InvalidOpcodeError {
     expected: u8,
     found: u8,

@@ -4,7 +4,7 @@ pub mod cpu;
 pub mod memory;
 
 #[derive(Error, Debug)]
-#[error("opcode {opcode} not found")]
+#[error("opcode {opcode:#X} not found")]
 pub struct NotFoundError {
     opcode: u8,
 }
