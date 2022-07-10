@@ -20,7 +20,7 @@ bitflags! {
 }
 
 #[derive(Debug)]
-pub struct CPU {
+pub struct Cpu {
     /// Program counter
     pc: u16,
     /// Stack pointer
@@ -37,14 +37,14 @@ pub struct CPU {
     memory: [u8; 65536],
 }
 
-impl CPU {
+impl Cpu {
     pub fn new() -> Self {
         Self::default()
     }
 
     pub fn reset(&mut self) {
-        self.sp = self.sp - 3;
-        self.flags.set(Flags::INTERRUPT_DISABLE, true);
+        self.sp -= 3;
+        self.flags.insert(Flags::INTERRUPT_DISABLE);
         todo!("APU: https://www.nesdev.org/wiki/CPU_power_up_state")
     }
 
@@ -60,7 +60,7 @@ impl CPU {
     }
 }
 
-impl Default for CPU {
+impl Default for Cpu {
     fn default() -> Self {
         Self {
             pc: INITIAL_PC,
