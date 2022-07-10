@@ -6,15 +6,13 @@ macro_rules! instruction {
             fn execute(&mut self, _ctx: &mut crate::instructions::Context) {
                 $op
             }
-            fn opcode(&self) -> u8 {
-                $opcode
-            }
-            fn len(&self) -> u8 {
-                $len
-            }
-            fn cycle(&self) -> u8 {
-                $cycle
-            }
+
+            #[inline(always)]
+            fn opcode(&self) -> u8 { $opcode }
+            #[inline(always)]
+            fn len(&self) -> u8 { $len }
+            #[inline(always)]
+            fn cycle(&self) -> u8 { $cycle }
         }
 
         impl TryFrom<u8> for $name {
@@ -29,4 +27,11 @@ macro_rules! instruction {
             }
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    fn macro_test() {
+        instruction!(67, 7, 5, TestInstruction, {});
+    }
 }
