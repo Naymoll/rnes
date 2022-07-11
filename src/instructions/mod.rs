@@ -7,6 +7,7 @@ pub trait Instruction {
     fn execute(&mut self, ctx: &mut Context);
 
     // Getters
+    fn name(&self) -> &str;
     fn opcode(&self) -> u8;
     fn len(&self) -> u8;
     fn cycle(&self) -> u8;

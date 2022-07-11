@@ -1,12 +1,14 @@
 macro_rules! instruction {
-    ($opcode:expr, $len:expr, $cycle:expr, $name:ident, $op:block) => {
-        pub struct $name;
+    ($struct_name:ident, $name:expr, $opcode:expr, $len:expr, $cycle:expr, $op:block) => {
+        pub struct $struct_name;
 
-        impl crate::instructions::Instruction for $name {
+        impl crate::instructions::Instruction for $struct_name {
             fn execute(&mut self, _ctx: &mut crate::instructions::Context) {
                 $op
             }
 
+            #[inline(always)]
+            fn name(&self) -> &str { $name }
             #[inline(always)]
             fn opcode(&self) -> u8 { $opcode }
             #[inline(always)]
@@ -15,12 +17,12 @@ macro_rules! instruction {
             fn cycle(&self) -> u8 { $cycle }
         }
 
-        impl TryFrom<u8> for $name {
+        impl TryFrom<u8> for $struct_name {
             type Error = crate::instructions::InvalidOpcodeError;
 
             fn try_from(opcode: u8) -> Result<Self, Self::Error> {
                 if opcode == $opcode {
-                    Ok($name)
+                    Ok($struct_name)
                 } else {
                     Err(Self::Error::new($opcode, opcode))
                 }
@@ -32,6 +34,6 @@ macro_rules! instruction {
 #[cfg(test)]
 mod tests {
     fn macro_test() {
-        instruction!(67, 7, 5, TestInstruction, {});
+        instruction!(TestInstruction, "Test", 67, 7, 5, {});
     }
 }
