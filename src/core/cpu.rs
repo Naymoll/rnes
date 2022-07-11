@@ -1,3 +1,4 @@
+use crate::core::memory::{Memory, Stack};
 use bitflags::bitflags;
 
 use crate::core::NotFoundError;
@@ -20,21 +21,22 @@ bitflags! {
 }
 
 #[derive(Debug)]
+// TODO: Change fields visibility
 pub struct Cpu {
     /// Program counter
-    pc: u16,
+    pub pc: u16,
     /// Stack pointer
-    sp: u16,
+    pub sp: u16,
     /// Accumulator
-    acc: u8,
+    pub acc: u8,
     /// X index
-    x: u8,
+    pub x: u8,
     /// Y index
-    y: u8,
+    pub y: u8,
     /// CPU flags
-    flags: Flags,
+    pub flags: Flags,
     // TODO: change to proper type
-    memory: [u8; 65536],
+    pub memory: [u8; 65536],
 }
 
 impl Cpu {
@@ -72,5 +74,32 @@ impl Default for Cpu {
             flags: Flags::INTERRUPT_DISABLE | Flags::BREAK | Flags::ONE, // TODO: Recheck
             memory: [0; 65536],
         }
+    }
+}
+
+impl Memory for Cpu {
+    fn read(&self, address: u16) -> u8 {
+        self.memory[address as usize]
+    }
+
+    fn write(&mut self, address: u16, value: u8) {
+        self.memory[address as usize] = value;
+    }
+}
+
+impl Stack for Cpu {
+    const STACK_ADDRESS: u16 = INITIAL_SP;
+    const STACK_RESET_ADDRESS: u16 = INITIAL_SP - 3;
+
+    fn pointer(&self) -> u16 {
+        self.pc
+    }
+
+    fn increment_pointer(&mut self) {
+        self.pc += 1;
+    }
+
+    fn decrement_pointer(&mut self) {
+        self.pc -= 1;
     }
 }

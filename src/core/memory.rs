@@ -1,24 +1,24 @@
-pub trait Memory<V, A> {
-    fn read(&self, address: A) -> V;
-    fn write(&mut self, address: A, value: V);
+pub trait Memory {
+    fn read(&self, address: u16) -> u8;
+    fn write(&mut self, address: u16, value: u8);
 }
 
-pub trait Stack<V, A>: Memory<V, A> {
-    const STACK_ADDRESS: A;
-    const STACK_RESET_ADDRESS: A;
+pub trait Stack: Memory {
+    const STACK_ADDRESS: u16;
+    const STACK_RESET_ADDRESS: u16;
 
-    fn pointer(&self) -> A;
+    fn pointer(&self) -> u16;
     fn increment_pointer(&mut self);
     fn decrement_pointer(&mut self);
 
-    fn pop(&mut self) -> V {
+    fn pop(&mut self) -> u8 {
         let value = self.read(self.pointer());
         self.increment_pointer();
 
         value
     }
 
-    fn push(&mut self, value: V) {
+    fn push(&mut self, value: u8) {
         self.write(self.pointer(), value);
         self.decrement_pointer();
     }
