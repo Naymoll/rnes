@@ -2,9 +2,9 @@
 #![allow(unused_macros)]
 #![allow(unused_variables)]
 
+mod core;
 mod instructions;
 mod macros;
-mod nes;
 
 fn main() {
     println!("Hello, world!");

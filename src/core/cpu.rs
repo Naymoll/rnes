@@ -1,7 +1,7 @@
 use bitflags::bitflags;
 
+use crate::core::NotFoundError;
 use crate::instructions::Instruction;
-use crate::nes::NotFoundError;
 
 const INITIAL_PC: u16 = 0x34;
 const INITIAL_SP: u16 = 0xFD;
@@ -42,6 +42,7 @@ impl Cpu {
         Self::default()
     }
 
+    // TODO: Recheck
     pub fn reset(&mut self) {
         self.sp -= 3;
         self.flags.insert(Flags::INTERRUPT_DISABLE);
