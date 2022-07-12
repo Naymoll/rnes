@@ -5,15 +5,15 @@ pub struct Relative;
 
 impl AddressingMode for Relative {
     fn address(&mut self, ctx: &mut Context) -> u16 {
-        let address = ctx.read(ctx.pc) as u8;
+        let offset = ctx.read(ctx.pc);
         ctx.pc += 1;
 
         // If bit 7 of the address is 1.
         // Then the address is negative.
-        if address.leading_ones() >= 1 {
-            ctx.pc - address as u16
+        if offset.leading_ones() >= 1 {
+            ctx.pc - offset as u16
         } else {
-            ctx.pc + address as u16
+            ctx.pc + offset as u16
         }
     }
 }

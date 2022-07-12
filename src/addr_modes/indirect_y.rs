@@ -5,20 +5,22 @@ pub struct IndirectY;
 
 impl AddressingMode for IndirectY {
     fn address(&mut self, ctx: &mut Context) -> u16 {
-        let pointer = ctx.read(ctx.pc);
+        let zero_page_offset = ctx.read(ctx.pc);
         ctx.pc += 1;
 
-        let lo = ctx.read(pointer as u16) as u16;
-        let hi = ctx.read((pointer + 1) as u16) as u16;
+        let lo = ctx.read(zero_page_offset as u16);
+        let hi = ctx.read((zero_page_offset + 1) as u16);
 
-        let mut address = (hi << 8) | lo;
+        let mut address = u16::from_le_bytes([lo, hi]);
         address += ctx.y as u16;
 
-        // TODO: Add return additional cycle if page is changed
-        if (address & 0xFF00) != (hi << 8) {
-            eprintln!("Warning: Page is changed. Need additional cycle")
+        let [_, addr_hi] = address.to_le_bytes();
+        if addr_hi != hi {
+            // TODO: Add return additional cycle if page is changed
+            eprintln!("Warning: Page is changed. Need additional cycle");
+            address
+        } else {
+            address
         }
-
-        address
     }
 }

@@ -4,9 +4,9 @@ pub struct Immediate;
 
 impl AddressingMode for Immediate {
     fn address(&mut self, ctx: &mut Context) -> u16 {
-        let addr = ctx.pc;
+        let address = ctx.pc;
         ctx.pc += 1;
 
-        addr
+        address
     }
 }

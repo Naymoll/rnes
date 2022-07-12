@@ -5,22 +5,25 @@ pub struct Indirect;
 
 impl AddressingMode for Indirect {
     fn address(&mut self, ctx: &mut Context) -> u16 {
-        let lo = ctx.read(ctx.pc) as u16;
+        let ptr_lo = ctx.read(ctx.pc);
         ctx.pc += 1;
 
-        let hi = ctx.read(ctx.pc) as u16;
+        let ptr_hi = ctx.read(ctx.pc);
         ctx.pc += 1;
 
-        let pointer = (hi << 8) | lo;
-        if lo == 0x00FF {
-            // Simulate page boundary hardware bug
-            let lo = ctx.read(pointer) as u16;
-            let hi = ctx.read(pointer & 0xFF00) as u16;
-            (hi << 8) | lo
+        let pointer = u16::from_le_bytes([ptr_lo, ptr_hi]);
+
+        let lo = ctx.read(pointer);
+        let hi = if ptr_lo == u8::MAX {
+            // Simulate page boundary hardware bug.
+            // More: https://www.nesdev.org/6502bugs.txt
+
+            let bab_pointer = u16::from_le_bytes([u8::MIN, ptr_hi]);
+            ctx.read(bab_pointer)
         } else {
-            let lo = ctx.read(pointer) as u16;
-            let hi = ctx.read(pointer + 1) as u16;
-            (hi << 8) | lo
-        }
+            ctx.read(pointer + 1)
+        };
+
+        u16::from_le_bytes([lo, hi])
     }
 }
