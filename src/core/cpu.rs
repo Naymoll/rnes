@@ -77,17 +77,32 @@ impl Default for Cpu {
     }
 }
 
-impl Memory for Cpu {
-    fn read(&self, address: u16) -> u8 {
+impl<A> Memory<A> for Cpu
+where
+    A: Into<usize>,
+{
+    const MAX_ADDRESS: usize = u16::MAX as usize;
+
+    fn read(&self, address: A) -> u8 {
+        let address = address.into();
+        if address > <Self as Memory<A>>::MAX_ADDRESS {
+            panic!("address {address:#X} out of range")
+        }
+
         self.memory[address as usize]
     }
 
-    fn write(&mut self, address: u16, value: u8) {
+    fn write(&mut self, address: A, value: u8) {
+        let address = address.into();
+        if address > <Self as Memory<A>>::MAX_ADDRESS {
+            panic!("address {address:#X} out of range")
+        }
+
         self.memory[address as usize] = value;
     }
 }
 
-impl Stack for Cpu {
+impl Stack<u16> for Cpu {
     const STACK_ADDRESS: u16 = INITIAL_SP;
     const STACK_RESET_ADDRESS: u16 = INITIAL_SP - 3;
 

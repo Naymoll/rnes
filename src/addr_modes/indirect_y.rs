@@ -8,8 +8,8 @@ impl AddressingMode for IndirectY {
         let zero_page_offset = ctx.read(ctx.pc);
         ctx.pc += 1;
 
-        let lo = ctx.read(zero_page_offset as u16);
-        let hi = ctx.read((zero_page_offset + 1) as u16);
+        let lo = ctx.read(zero_page_offset);
+        let hi = ctx.read(zero_page_offset + 1);
 
         let mut address = u16::from_le_bytes([lo, hi]);
         address += ctx.y as u16;
