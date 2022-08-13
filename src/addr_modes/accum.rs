@@ -1,9 +1,9 @@
-use crate::addr_modes::{AddressingMode, Context};
+use crate::addr_modes::{AddressingMode, Context, Fetched};
 
 pub struct Accum;
 
 impl AddressingMode for Accum {
-    fn address(&mut self, ctx: &mut Context) -> u16 {
-        unreachable!("this addressing mode shouldn't be used directly")
+    fn fetch(&mut self, ctx: &mut Context) -> Fetched {
+        Fetched::no_cycle(ctx.acc)
     }
 }

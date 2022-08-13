@@ -1,12 +1,14 @@
-use crate::addr_modes::{AddressingMode, Context};
+use crate::addr_modes::{AddressingMode, Context, Fetched};
+use crate::core::memory::Memory;
 
 pub struct Immediate;
 
 impl AddressingMode for Immediate {
-    fn address(&mut self, ctx: &mut Context) -> u16 {
+    fn fetch(&mut self, ctx: &mut Context) -> Fetched {
         let address = ctx.pc;
         ctx.pc += 1;
 
-        address
+        let value = ctx.read(address);
+        Fetched::no_cycle(value)
     }
 }

@@ -1,16 +1,19 @@
-use crate::addr_modes::{AddressingMode, Context};
+use crate::addr_modes::{AddressingMode, Context, Fetched};
 use crate::core::memory::Memory;
 
 pub struct Absolute;
 
 impl AddressingMode for Absolute {
-    fn address(&mut self, ctx: &mut Context) -> u16 {
+    fn fetch(&mut self, ctx: &mut Context) -> Fetched {
         let lo = ctx.read(ctx.pc);
         ctx.pc += 1;
 
         let hi = ctx.read(ctx.pc);
         ctx.pc += 1;
 
-        u16::from_le_bytes([lo, hi])
+        let address = u16::from_le_bytes([lo, hi]);
+        let value = ctx.read(address);
+
+        Fetched::no_cycle(value)
     }
 }
