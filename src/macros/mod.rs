@@ -1,10 +1,11 @@
+#[macro_export]
 macro_rules! instruction {
-    ($struct_name:ident, $name:expr, $opcode:expr, $len:expr, $cycle:expr, $op:block) => {
+    ($struct_name:ident, $name:expr, $opcode:expr, $len:expr, $cycle:expr, $op:expr) => {
         pub struct $struct_name;
 
         impl crate::instructions::Instruction for $struct_name {
-            fn execute(&mut self, _ctx: &mut crate::instructions::Context) {
-                $op
+            fn execute(&mut self, ctx: &mut crate::instructions::Context) {
+                $op(self, ctx)
             }
 
             #[inline(always)]
